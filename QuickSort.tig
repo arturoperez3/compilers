@@ -1,0 +1,42 @@
+/* Arturo Perez */ 
+/* arturo.e.perez@vanderbilt.edu */
+/* perezae */
+/* CS 3276 */ 
+/* 20 January 2018 */ 
+/* I did not receive unathorized help to complete this assignment */
+
+let 
+
+
+
+	type arrtype = array of int
+	var buffer:arrtype := arrtype [10] of 0
+	/* let var low := 0 */
+	/* let var high := 10 */
+
+
+
+	function promptUser (i : int) = 
+		for j:=0 to 10 do (let var i := readint(); buffer[j] := i)
+
+
+
+	function QuickSort (buf : arrtype)
+
+		let function partition(buf: arrtype, lo: int, hi: int)
+
+
+			let function Swap(buf: arrtype, lo:int, hi:int) 
+				let var a 
+				in  a := buf[lo]
+					buf[lo] := buf[hi]
+					buf[hi] := a
+				end
+
+			var pi := buf[hi]
+			var i := lo-1
+
+			in for j:=lo to hi-1 do
+
+		
+
