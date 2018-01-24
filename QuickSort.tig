@@ -10,51 +10,51 @@ let
 
 
 	type arrtype = array of int
-	var buffer:arrtype := arrtype [10] of 0
+	var buf := arrtype [10] of 0
 
 
 
 
-	function promptUser (i : int) = 
+	function promptUser () = 
 		for j:=0 to 10 do (let var i := readint()
-								do buffer[j] := i)
+								in  buf[j] := i end)
 
 
 
-	function QuickSort (buf : arrtype) =
+	function QuickSort (buf: arrtype, lo: int, hi: int) =
 
-		let var low := 0 
-			var high := 10
+		let var low := lo 
+			var high := hi
 			var pi := 0
 			function partition(buf: arrtype, lo: int, hi: int) : int =
 
-			let function Swap(buf: arrtype, lo:int, hi:int) 
-				let var a 
-				in  a := buf[lo]
-					buf[lo] := buf[hi]
+			let function Swap(buf: arrtype, lo:int, hi:int) = 
+				let var a := 0
+				in  a := buf[lo];
+					buf[lo] := buf[hi];
 					buf[hi] := a
 				end
 
 			var pivot := buf[hi]
 			var i := lo-1
 
-			in for j:=lo to hi-1 do 
+			in (for j:=lo to hi-1 do 
 				if buf[j] <= pivot
 					then (i := i + 1;
-						 Swap(buf, i, j))
-			Swap(buf, i+1, hi)
+						 Swap(buf, i, j)));
+			Swap(buf, i+1, hi);
 			i+1
-		end
+			end
 
 		in if low < high 
-			(pi = partition(buf, low, high);
+			then (pi = partition(buf, low, high);
 			 QuickSort(buf, low, pi-1);
-			 QuickSort(buf, pi+1, high);)
+			 QuickSort(buf, pi+1, high))
 		end
 
 
 
 
-
+in promptUser(); QuickSort(buf, 0, 10) 
+end
 		
-
