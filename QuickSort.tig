@@ -2,38 +2,39 @@
 /* arturo.e.perez@vanderbilt.edu */
 /* perezae */
 /* CS 3276 */ 
-/* 20 January 2018 */ 
+/* 24 January 2018 */ 
 /* I did not receive unathorized help to complete this assignment */
 
+/* a program that prompts the user for 10 integers, sorts them using the 
+QuickSort algorithm, then prints the sorted 10 integers to the console */
 let 
-
-
-
 	type arrtype = array of int
 	var buf := arrtype [10] of 0
 
-
-
-
+	/* promptUser function - prompts user to input 10 integers */
 	function promptUser () = 
-		for j:=0 to 10 do (let var i := readint()
-								in  buf[j] := i end)
+		for j:=0 to 10 do (let var i := readint() in buf[j] := i end)
 
-
-
+	/* QuickSort function - implementation of QuickSort algorithm */
 	function QuickSort (buf: arrtype, lo: int, hi: int) =
-
 		let var low := lo 
 			var high := hi
 			var pi := 0
+
+			/* partition function - takes the last element to be the pivot,
+			places the pivot element at its correct position in sorted array,
+			and places all elements smaller than the pivot to the left of the 
+			pivot and all elements greater than the pivot to the right of 
+			the pivot */
 			function partition(buf: arrtype, lo: int, hi: int) : int =
 
+			/* swap function - swaps two elements */
 			let function Swap(buf: arrtype, lo:int, hi:int) = 
 				let var a := 0
 				in  a := buf[lo];
 					buf[lo] := buf[hi];
 					buf[hi] := a
-				end
+				end 
 
 			var pivot := buf[hi]
 			var i := lo-1
@@ -44,7 +45,7 @@ let
 						 Swap(buf, i, j)));
 			Swap(buf, i+1, hi);
 			i+1
-			end
+			end 
 
 		in if low < high 
 			then (pi = partition(buf, low, high);
@@ -52,12 +53,12 @@ let
 			 QuickSort(buf, pi+1, high))
 		end
 
+	/* printArray function - prints the content of a 10 element array 
+	to the console */
 	function printArray() = 
 		for j:=0 to 10 do (printint(buf[j]); print(" "))
 
-
-
-
+/* body of main program */
 in promptUser(); QuickSort(buf, 0, 10); printArray()
 end
 		
