@@ -1,0 +1,17 @@
+#!/bin/csh
+
+# run scanner on all Appel test programs and
+# compare against lextest-good executable
+
+echo "Running Appel test cases"
+setenv AppelDir ../testcases
+foreach i ($AppelDir/*.tig) 
+ echo "--------------------------------------------------------------- "
+ echo "scanning " $i  
+ rm -f tmp1 tmp2
+ ./lextest $i >tmp1
+ ./lextest-good $i >tmp2
+ echo "comparing output"
+ diff tmp1 tmp2
+end
+

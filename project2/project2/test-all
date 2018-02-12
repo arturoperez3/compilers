@@ -1,0 +1,12 @@
+#!/bin/csh
+
+# run scanner on all Appel test programs
+
+echo "Running Appel test cases"
+setenv AppelDir ../testcases
+foreach i ($AppelDir/*.tig) 
+ echo "--------------------------------------------------------------- "
+ echo "scanning " $i  
+ ./lextest $i 
+end
+
