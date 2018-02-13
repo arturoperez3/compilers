@@ -50,6 +50,7 @@ nonesc [ 0-9A-Za-z\!\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\]\^\_\`\{\|\}\~]
   the following section is where we place all our rules and actions
 *****************************/
 
+%x INITIAL
 %x COMMENT
 %x STR
 %x ESC 
