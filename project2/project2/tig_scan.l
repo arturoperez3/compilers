@@ -104,7 +104,7 @@ type    {adjust(); return TYPE}
 .	      {adjust(); EM_error(EM_tokPos, "illegal token: '%c'",yytext[0]);}
 
 <COMMENT> "*/" {adjust(); BEGIN INITIAL;}
-<COMMENT>.     {adust(); continue;}  
+<COMMENT> {nonesc}     {adust(); continue;}  
 
 %%
 
