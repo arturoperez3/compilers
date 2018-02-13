@@ -50,14 +50,61 @@ nonesc [ 0-9A-Za-z\!\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\]\^\_\`\{\|\}\~]
   the following section is where we place all our rules and actions
 *****************************/
 
-%%
-" "	 {adjust(); continue;}
-\n	 {adjust(); EM_newline(); continue;}
-","	 {adjust(); return COMMA;}
-for	 {adjust(); return FOR;}
-[0-9]+	 {adjust(); yylval.ival=atoi(yytext); return INT;}
-.	 {adjust(); EM_error(EM_tokPos, "illegal token: '%c'",yytext[0]);}
+%x COMMENT
+%x STR
+%x ESC 
+%x CTRL 
 
+%%
+
+" "	    {adjust(); continue;}
+"/*"    {adjust(); BEGIN COMMENT;} 
+\n	    {adjust(); EM_newline(); continue;}
+","	    {adjust(); return COMMA;}
+":"     {adjust(); return COLON}
+";"     {adust(); return SEMICOLON}
+"("     {adust(); return LPAREN}
+")"     {adust(); return RPAREN}
+"["     {adust(); return LBRACK}
+"]"     {adust(); return RBRACK}
+"{"     {adust(); return LBRACE}
+"}"     {adust(); return RBRACE}
+"."     {adust(); return DOT}
+"+"     {adjust(); return PLUS}
+"-"     {adjust(); return MINUS}
+"*"     {adjust(); return TIMES}
+"/"     {adjust(); return DIVIDE}
+"="     {adust(); return EQ}
+"<>"    {adjust(); return NEQ}
+"<"     {adjust(); return LT}
+"<="    {adjust(); return LE}
+">"     {adust(); return GT}
+">="    {adjust(); return GE}
+"&"     {adjust(); return AND}
+"|"     {adjust(); return OR}
+":="    {adjust(); return ASSIGN}
+array   {adjust(); return ARRAY;}
+if      {adjust(); return IF}
+then    {adjust(); return THEN}
+else    {adjust(); return ELSE}
+while   {adjust(); return WHILE}
+for     {adjust(); return FOR;}
+to      {adjust(); return TO;}
+do      {adjust(); return DO;}
+let     {adjust(); return LET}
+in      {adjust(); return IN}
+end     {adjust(); return END}
+of      {adjust(); return OF}
+break   {adjust(); return BREAK}
+nil     {adjust(); return NIL}
+function {adjust(); return FUNCTION}
+var     {adjust(); return VAR}
+type    {adjust(); return TYPE}
+[0-9]+	{adjust(); yylval.ival=atoi(yytext); return INT;}
+.	      {adjust(); EM_error(EM_tokPos, "illegal token: '%c'",yytext[0]);}
+
+<COMMENT> "*/" {adjust(); BEGIN INITIAL;}
+<COMMENT>.     {adust(); continue;}  
 
 %%
 

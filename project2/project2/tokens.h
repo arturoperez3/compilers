@@ -31,8 +31,8 @@ extern YYSTYPE yylval;
 # define AND 280
 # define OR 281
 # define ASSIGN 282
-# define ARRAY 283
-# define IF 284
+# define ARRAY 283 
+# define IF 284 
 # define THEN 285
 # define ELSE 286
 # define WHILE 287
