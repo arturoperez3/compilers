@@ -4,7 +4,7 @@
 Name: Arturo Perez
 VUnetid: perezae
 Email: arturo.e.perez@vanderbilt.edu
-Descrption:
+Descrption: A lexical analyzer for the Tiger language built using flex.
 Last modified: 11 February 2018
 ***/
 
@@ -25,10 +25,12 @@ using namespace std;
 int charPos=1;
 
 extern "C"
+
 int yywrap(void);
 
 void adjust(void);
 
+int count = 0;
 
 %}
 
@@ -51,60 +53,72 @@ nonesc [ 0-9A-Za-z\!\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\]\^\_\`\{\|\}\~]
 *****************************/
 
 %x COMMENT
-%x STR
-%x ESC 
-%x CTRL 
+%x STRNG
 
 %%
 
-<INITIAL> " "	    {adjust(); continue;}
-<INITIAL> "/*"    {adjust(); BEGIN COMMENT;} 
-<INITIAL> \n	    {adjust(); EM_newline(); continue;}
-<INITIAL> ","	    {adjust(); return COMMA;}
-<INITIAL> ":"     {adjust(); return COLON;}
-<INITIAL> ";"     {adust(); return SEMICOLON;}
-<INITIAL> "("     {adust(); return LPAREN;}
-<INITIAL> ")"     {adust(); return RPAREN;}
-<INITIAL> "["     {adust(); return LBRACK;}
-<INITIAL> "]"     {adust(); return RBRACK;}
-<INITIAL> "{"     {adust(); return LBRACE;}
-<INITIAL> "}"     {adust(); return RBRACE;}
-<INITIAL> "."     {adust(); return DOT;}
-<INITIAL> "+"     {adjust(); return PLUS;}
-<INITIAL> "-"     {adjust(); return MINUS;}
-<INITIAL> "*"     {adjust(); return TIMES;}
-<INITIAL> "/"     {adjust(); return DIVIDE;}
-<INITIAL> "="     {adust(); return EQ;}
-<INITIAL> "<>"    {adjust(); return NEQ;}
-<INITIAL> "<"     {adjust(); return LT;}
-<INITIAL> "<="    {adjust(); return LE;}
-<INITIAL> ">"     {adust(); return GT;}
-<INITIAL> ">="    {adjust(); return GE;}
-<INITIAL> "&"     {adjust(); return AND;}
-<INITIAL> "|"     {adjust(); return OR;}
-<INITIAL> ":="    {adjust(); return ASSIGN;}
-<INITIAL> array   {adjust(); return ARRAY;}
-<INITIAL> if      {adjust(); return IF;}
-<INITIAL> then    {adjust(); return THEN;}
-<INITIAL> else    {adjust(); return ELSE;}
-<INITIAL> while   {adjust(); return WHILE;}
-<INITIAL> for     {adjust(); return FOR;}
-<INITIAL> to      {adjust(); return TO;}
-<INITIAL> do      {adjust(); return DO;}
-<INITIAL> let     {adjust(); return LET;}
-<INITIAL> in      {adjust(); return IN;}
-<INITIAL> end     {adjust(); return END;}
-<INITIAL> of      {adjust(); return OF;}
-<INITIAL> break   {adjust(); return BREAK;}
-<INITIAL> nil     {adjust(); return NIL;}
-<INITIAL> function {adjust(); return FUNCTION;}
-<INITIAL> var     {adjust(); return VAR;}
-<INITIAL> type    {adjust(); return TYPE;}
-<INITIAL> [0-9]+	{adjust(); yylval.ival=atoi(yytext); return INT;}
-<INITIAL> .	      {adjust(); EM_error(EM_tokPos, "illegal token: '%c'",yytext[0]);}
+" "	    {adjust(); continue;}
+"/*"    {adjust(); ++count; BEGIN COMMENT;} 
+"\""    {adjust(); yylval.sval=new string(yytext); BEGIN STRNG;}
+\n	    {adjust(); EM_newline(); continue;}
+\t      {adjust(); continue;}
+\f      {adjust(); continue;}
+","	    {adjust(); return COMMA;}
+":"     {adjust(); return COLON;}
+";"     {adjust(); return SEMICOLON;}
+"("     {adjust(); return LPAREN;}
+")"     {adjust(); return RPAREN;}
+"["     {adjust(); return LBRACK;}
+"]"     {adjust(); return RBRACK;}
+"{"     {adjust(); return LBRACE;}
+"}"     {adjust(); return RBRACE;}
+"."     {adjust(); return DOT;}
+"+"     {adjust(); return PLUS;}
+"-"     {adjust(); return MINUS;}
+"*"     {adjust(); return TIMES;}
+"/"     {adjust(); return DIVIDE;}
+"="     {adjust(); return EQ;}
+"<>"    {adjust(); return NEQ;}
+"<"     {adjust(); return LT;}
+"<="    {adjust(); return LE;}
+">"     {adjust(); return GT;}
+">="    {adjust(); return GE;}
+"&"     {adjust(); return AND;}
+"|"     {adjust(); return OR;}
+":="    {adjust(); return ASSIGN;}
+"*/"    {adjust(); EM_error(EM_tokPos, "unmatched closing comment");}
+array   {adjust(); return ARRAY;}
+if      {adjust(); return IF;}
+then    {adjust(); return THEN;}
+else    {adjust(); return ELSE;}
+while   {adjust(); return WHILE;}
+for     {adjust(); return FOR;}
+to      {adjust(); return TO;}
+do      {adjust(); return DO;}
+let     {adjust(); return LET;}
+in      {adjust(); return IN;}
+end     {adjust(); return END;}
+of      {adjust(); return OF;}
+break   {adjust(); return BREAK;}
+nil     {adjust(); return NIL;}
+function {adjust(); return FUNCTION;}
+var     {adjust(); return VAR;}
+type    {adjust(); return TYPE;}
+[0-9]+	{adjust(); yylval.ival=atoi(yytext); return INT;}
+.	      {adjust(); EM_error(EM_tokPos, "illegal token: '%c'",yytext[0]);}
+([a-zA-Z])([a-zA-Z0-9_])*    {adjust(); yylval.sval = new string(yytext); return ID;}
 
-<COMMENT> "*/" {adjust(); BEGIN INITIAL;}
-<COMMENT> {nonesc}    {adust(); continue;}  
+<STRNG>"\""        {adjust(); BEGIN INITIAL; yylval.sval->erase(0,1); return STRING; }
+<STRNG>{nonesc}    {adjust(); yylval.sval->push_back(*yytext);}
+<STRNG><<EOF>>     {adjust(); EM_error(EM_tokPos, "end of file encountered"); BEGIN INITIAL;}
+<STRNG>\n          {adjust(); EM_error(EM_tokPos, "new line encountered"); EM_newline(); BEGIN INITIAL;}
+<STRNG>\f          {adjust(); continue;}
+
+<COMMENT>"/*" {adjust(); ++count; continue;}
+<COMMENT>"*/" {adjust(); --count; if (count < 1) BEGIN INITIAL; continue;}
+<COMMENT>.    {adjust(); continue;}  
+<COMMENT><<EOF>>   {adjust(); EM_error(EM_tokPos, "unterminated comment"); BEGIN INITIAL;}
+<COMMENT>\n   {adjust(); EM_newline(); continue;}
 
 %%
 

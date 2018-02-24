@@ -1,0 +1,19 @@
+Arturo Perez
+Dr. Roth
+Compilers 3276
+I did not receive any unauthorized help on this assignment. 
+12 February 2018
+
+In this project we built a lexical analyzer for the Tiger language using flex. 
+This lexical analyzer can:
+    - recognize all the Tiger symbols and reserved words as specified by the spec 
+    and the tokens.h file. 
+    - recognize Tiger comments.
+    - ignores whitespace characters.
+    - recognize and return string literals. 
+    - properly handles errors such as unrecognizable character, unterminated comment,
+    unterminated string, and unmatched closing comment. 
+
+I also implemented extension 1 to properly handle nested comments. If I had more time 
+I would have loved to implement the other 2 extensions. Handling and encapsulating the 
+various states (such as INITIAL, STRNG, COMMENT) was interesting and intuitive. 
