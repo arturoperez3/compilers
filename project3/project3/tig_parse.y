@@ -44,6 +44,15 @@ void yyerror(char *s);
   BREAK NIL
   FUNCTION VAR TYPE 
 
+%nonassoc IF
+%nonassoc THEN
+%nonassoc AND OR
+%nonassoc EQ NEQ LT LE GT GE
+%left PLUS MINUS
+%left TIMES DIVIDE
+
+//fix if dangling else by making them nonassoc 
+
 
 
 %start program
@@ -57,13 +66,45 @@ void yyerror(char *s);
 
 %%
 
-program:	exp	{ }
+program:	exp 	{ }
+   |		ty 	{ }
+   |		tyfields { } 
+   | 		vardec  { }
+   |		fundec	{ }
+   |		parantheses	{ }
 
 exp:		INT	{ }
    |		NIL	{ }
+   |		LPAREN  { }
    |		exp PLUS exp	{ }
+   |		exp MINUS exp	{ }
+   | 		exp TIMES exp   { }
+   |		exp DIVIDE exp	{ }
+   |		exp EQ exp	{ }
+   | 		exp NEQ exp	{ } 
+   | 		exp LT exp	{ }
+   |		exp LE exp 	{ }
+   |		exp GT exp 	{ }
+   | 		exp GE exp	{ }
+   |		LPAREN exp	{ }
+   |		exp SEMICOLON exp	{ }
+   |		exp RPAREN	{ }
 
+ty:		ID	{ }
+   |		TYPE	{ } 
 
+tyfields:	ID COLON ID		{ }
+   |		/* epsilon */		{ }
+
+//START HERE WITH TYFIELDS ///////////////////////////
+
+vardec:		VAR ID ASSIGN exp 	{ }
+   |		VAR ID COLON ID ASSIGN exp	{ }
+
+fundec:		FUNCTION ID RPAREN tyfields LPAREN EQ exp	{ }
+   |    	FUNCTION ID RPAREN tyfields LPAREN COLON ID EQ exp	{ }
+
+parantheses: LPAREN RPAREN	{ }
 
 %%
 
