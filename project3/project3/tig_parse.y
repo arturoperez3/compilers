@@ -1,12 +1,11 @@
 
 /***
-Name:
-VUnetid:
-Email:
-Descrption:
-Last modified:
+Name: Arturo Perez
+VUnetid: perezae
+Email: arturo.e.perez@vanderbilt.edu
+Descrption: A parser for the Tiger language written using Bison.
+Last modified: 2/28/2018
 ***/
-
 
 /* this is the definition section of the grammar file.          */
 /* here is where you place your includes, function prototypes,  */
@@ -24,7 +23,6 @@ void yyerror(char *s);
 
 
 %}
-
 
 %union {
 	int pos;
@@ -44,20 +42,23 @@ void yyerror(char *s);
   BREAK NIL
   FUNCTION VAR TYPE 
 
-%nonassoc IF
-%nonassoc THEN
-%nonassoc AND OR
-%nonassoc EQ NEQ LT LE GT GE
-%left PLUS MINUS
-%left TIMES DIVIDE
+%nonassoc 		THEN
+%nonassoc 		ELSE
+%nonassoc 		DO
+%nonassoc 		OF
+%nonassoc 		ASSIGN
+%left	 		OR 
+%left 			AND
+%nonassoc 		EQ NEQ LT LE GT GE
+%left 			SEMICOLON /*MAYBE */
+%left 			PLUS MINUS
+%left 			TIMES DIVIDE
+%left 			LPAREN RPAREN
+%left			UMINUS
 
 //fix if dangling else by making them nonassoc 
 
-
-
 %start program
-
-
 
 /* the next section is the rule section of the grammar file.  */
 /* that is where you will place your grammar for the Tiger    */
@@ -66,45 +67,85 @@ void yyerror(char *s);
 
 %%
 
-program:	exp 	{ }
-   |		ty 	{ }
-   |		tyfields { } 
-   | 		vardec  { }
-   |		fundec	{ }
-   |		parantheses	{ }
+program:	exp 							{ }
 
-exp:		INT	{ }
-   |		NIL	{ }
-   |		LPAREN  { }
-   |		exp PLUS exp	{ }
-   |		exp MINUS exp	{ }
-   | 		exp TIMES exp   { }
-   |		exp DIVIDE exp	{ }
-   |		exp EQ exp	{ }
-   | 		exp NEQ exp	{ } 
-   | 		exp LT exp	{ }
-   |		exp LE exp 	{ }
-   |		exp GT exp 	{ }
-   | 		exp GE exp	{ }
-   |		LPAREN exp	{ }
-   |		exp SEMICOLON exp	{ }
-   |		exp RPAREN	{ }
+exp:		INT							{ }
+   |		NIL							{ }
+   |		STRING							{ }
+   |		exp PLUS exp						{ }
+   |		exp MINUS exp						{ }
+   | 		exp TIMES exp						{ }
+   |		exp DIVIDE exp						{ }
+   |		MINUS exp %prec UMINUS					{ }
+   |		exp EQ exp						{ }
+   | 		exp NEQ exp						{ } 
+   | 		exp LT exp						{ }
+   |		exp LE exp						{ }
+   |		exp GT exp						{ }
+   | 		exp GE exp						{ }
+   |		exp AND exp						{ }
+   |		exp OR exp						{ }
+   |		LPAREN RPAREN 						{ }
+   |		LPAREN expSC RPAREN 					{ }
+   |		LET dec IN expSC END 					{ }
+   |		IF exp THEN exp ELSE exp 				{ }
+   |		IF exp THEN exp						{ }
+   |		ID LPAREN funcparams RPAREN  				{ }	
+   |		ID LBRACE recparams RBRACE 				{ }
+   |		ID LBRACE recparams RBRACE 				{ }
+   |		lvalue LBRACK exp RBRACK OF exp				{ }
+   |		lvalue							{ }
+   |		lvalue ASSIGN exp 					{ }
+   |		FOR lvalue ASSIGN exp TO exp DO expSC			{ }
+   |		WHILE exp DO expSC					{ }
+   |		BREAK
 
-ty:		ID	{ }
-   |		TYPE	{ } 
+/* deals with semicolons and break in exp */
+expSC:		exp							{ }
+   |		expSC SEMICOLON expSC					{ }
+   |		expSC SEMICOLON BREAK SEMICOLON expSC			{ }
+   |		/* epsilon */						{ }
 
-tyfields:	ID COLON ID		{ }
-   |		/* epsilon */		{ }
+/* declaration-sequence */
+dec:		tydec dec						{ }
+   |		vardec dec						{ }
+   |		fundec dec						{ }
+   |		/* epsilon */						{ }
 
-//START HERE WITH TYFIELDS ///////////////////////////
+/* type declaration */
+tydec:		TYPE ID EQ ty						{ }
 
-vardec:		VAR ID ASSIGN exp 	{ }
-   |		VAR ID COLON ID ASSIGN exp	{ }
+/* variable declaration */ 
+vardec:		VAR ID ASSIGN exp					{ }
+   |		VAR ID COLON ID ASSIGN exp				{ }
 
-fundec:		FUNCTION ID RPAREN tyfields LPAREN EQ exp	{ }
-   |    	FUNCTION ID RPAREN tyfields LPAREN COLON ID EQ exp	{ }
+/* function declaration */
+fundec:		FUNCTION ID LPAREN tyfields RPAREN EQ exp		{ }
+   |		FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp	{ }
 
-parantheses: LPAREN RPAREN	{ }
+
+ty:		ID							{ }
+   |		LBRACE tyfields RBRACE					{ }
+   |		ARRAY OF ID						{ }
+
+/* used in function declaration */
+tyfields:	/* epsilon */						{ }
+   |		ID COLON ID						{ }
+   |		tyfields COMMA ID COLON ID				{ }
+
+lvalue:		ID							{ }
+   |		lvalue DOT ID						{ }
+   |		lvalue LBRACK exp RBRACK				{ }
+
+/* function parameters */
+funcparams:	funcparams COMMA exp					{ }
+   |		exp							{ }
+   |		/* epsilon */						{ }
+
+recparams:	recparams COMMA ID EQ exp				{ }
+   |		ID EQ exp						{ }
+   |		/* epsilon */						{ }
+
 
 %%
 

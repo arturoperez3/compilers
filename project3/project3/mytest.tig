@@ -4,7 +4,12 @@
 
 /* () */
 
-function treeLeaves (t: tree) : int = 5
+/* function treeLeaves (t: tree) : int = 5 */
 
+/* while 2 < 3 do (5; break; 7) */
 
+/* for a := 0 to 9 do (a+1; break; 6+3) */
 
+/* (2+6; break) */
+
+let var x := 4; var y :=3; in end

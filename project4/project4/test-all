@@ -1,0 +1,12 @@
+#!/bin/csh
+
+# run parser on all Appel test programs
+
+echo "Running Appel test cases"
+setenv AppelDir ../testcases
+foreach i ($AppelDir/*.tig) 
+ echo "--------------------------------------------------------------- "
+ echo "parsing " $i  
+ ./parsetest $i 
+end
+
