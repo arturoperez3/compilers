@@ -113,95 +113,120 @@ exp:	INT { $$ = new absyn::IntExp(EM_tokPos, $1); }
 
    |    STRING { $$ = new absyn::StringExp(EM_tokPos, Appel_String($1)); }
 
-   |    BREAK {  }
+   |    BREAK { $$ = new absyn::BreakExp(EM_tokPos); }
 
    |    lvalue { $$ = new absyn::VarExp(EM_tokPos,$1); }
 
-   |    NIL {  }
+   |    NIL { $$ = new absyn::NilExp(EM_tokPos); }
 
-   |    exp PLUS exp {  }
+   |    exp PLUS exp { $$ = new absyn::OpExp(EM_tokPos, absyn::OpExp::EXP_PLUS, $1, $3) ; }
 
-   |    exp MINUS exp {  }
+   |    exp MINUS exp { $$ = new absyn::OpExp(EM_tokPos, absyn::OpExp::EXP_MINUS, $1, $3) ;  }
 
-   |    exp TIMES exp {  }
+   |    exp TIMES exp { $$ = new absyn::OpExp(EM_tokPos, absyn::OpExp::EXP_MUL, $1, $3) ; }
 
-   |    exp DIVIDE exp {  }
+   |    exp DIVIDE exp { $$ = new absyn::OpExp(EM_tokPos, absyn::OpExp::EXP_DIV, $1, $3) ;  }
 
    |    MINUS exp %prec UMINUS  {  }
 
-   |    exp EQ exp {  }
+   |    exp EQ exp { $$ = new absyn::OpExp(EM_tokPos, absyn::OpExp::EXP_EQ, $1, $3) ; }
 
-   |    exp NEQ exp {  }
+   |    exp NEQ exp { $$ = new absyn::OpExp(EM_tokPos, absyn::OpExp::EXP_NE, $1, $3) ;  }
 
-   |    exp GT exp {  }
+   |    exp GT exp { $$ = new absyn::OpExp(EM_tokPos, absyn::OpExp::EXP_GT, $1, $3) ;  }
 
-   |    exp LT exp {  }
+   |    exp LT exp { $$ = new absyn::OpExp(EM_tokPos, absyn::OpExp::EXP_LT, $1, $3) ;  }
 
-   |    exp GE exp {  }
+   |    exp GE exp { $$ = new absyn::OpExp(EM_tokPos, absyn::OpExp::EXP_GE, $1, $3) ;  }
 
-   |    exp LE exp {  }
+   |    exp LE exp { $$ = new absyn::OpExp(EM_tokPos, absyn::OpExp::EXP_LE, $1, $3) ;  }
 
-   |    exp AND exp {  }
+   |    exp AND exp { $$ = new absyn::IfExp(EM_tokPos, $1, $3, nullptr) ; }
 
-   |    exp OR exp {  }
+   |    exp OR exp { $$ = new absyn::IfExp(EM_tokPos, $1, new absyn::IntExp(EM_tokPos,1), $3) ; }
 
-   |    lvalue ASSIGN exp {  }
+   |    lvalue ASSIGN exp { $$ = new absyn::AssignExp(EM_tokPos, $1, $3) ; }
 
-   |    IF exp THEN exp {  }
+   |    IF exp THEN exp { $$ = new absyn::IfExp(EM_tokPos, $2, $4, nullptr) ; }
 
-   |    IF exp THEN exp ELSE exp {  }
+   |    IF exp THEN exp ELSE exp { $$ = new absyn::IfExp(EM_tokPos, $2, $4, $6) ; }
 
-   |    WHILE exp DO exp %prec STMT {  }
+   |    WHILE exp DO exp %prec STMT { $$ = new absyn::WhileExp(EM_tokPos, $2, $4) ; }
 
-   |    FOR ID ASSIGN exp TO exp DO exp %prec STMT  {  }
+   |    FOR ID ASSIGN exp TO exp DO exp %prec STMT  { $$ = new absyn::ForExp(EM_tokPos, S_Symbol($2), $4, $6, $8) ; }
 
-   |    LPAREN RPAREN {  }
+   |    LPAREN RPAREN { $$ = new absyn::SeqExp(EM_tokPos, nullptr) ;  }
 
-   |    LPAREN exp RPAREN {  }
+   |    LPAREN exp RPAREN { $$ = $2 ; }
 
-   |    LPAREN seq RPAREN {  }
+   |    LPAREN seq RPAREN { $$ = $2 ;  }
 
-   |    lvalue LBRACK exp RBRACK OF exp %prec ARRAY_LITERAL {  }
+   |    lvalue LBRACK exp RBRACK OF exp %prec ARRAY_LITERAL { $$ = new absyn::ArrayExp(EM_tokPos, really_typename($1), $3, $6) ; }
         // NOTE: used 'lvalue' rather than 'ID' to avoid a conflict
         // (see hint #6 from project #3).
         // Must insure that the lvalue is really just an ID
 
-   |    ID LPAREN arglist RPAREN  {  }
+   |    ID LPAREN arglist RPAREN  { $$ = new absyn::CallExp(EM_tokPos,S_Symbol($1), $3) ; }
 
-   |    ID LBRACE reclist RBRACE  {  }
+   |    ID LBRACE reclist RBRACE  { $$ = new absyn::RecordExp(EM_tokPos, S_Symbol($1), $3) ; }
 
-   |    LET decs IN expseq END {  }
+   |    LET decs IN expseq END { $$ = new absyn::LetExp(EM_tokPos, $2, $4 ) ; }
 
 
-decs:   /* epsilon */	  {  }
-   |    dec decs          {  }
+decs:   /* epsilon */	  { $$ = new absyn::DecList(nullptr, nullptr) ; }
+   |    dec decs          { $$ = new absyn::DecList($1, $2); }
 
-dec:    tydeclist   {  }
-   |    vardec      {  }
-   |    fundeclist  {  }
+dec:    tydeclist   { $$ = new absyn::TypeDec(EM_tokPos, $1) ; }
+   |    vardec      { $$ = $1 ; }
+   |    fundeclist  { $$ = new absyn::FunctionDec(EM_tokPos, $1); }
 
 // The following two nonterminals each introduce a shift/reduce conflict,
 // since we can parse two types as a single list (by shifting) or reduce
 // each to a separate list and the parse the two lists as two decs.
 // We want to do the former, which corresponds to a shift, so its ok.
 
-tydeclist: tydec tydeclist	{  }
-	 | tydec		{  }
+tydeclist: tydec tydeclist	{ $$ = new absyn::NametyList($1, $2) ; }
+	 | tydec		{ $$ = new absyn::NametyList($1, nullptr) ; }
 
-fundeclist: fundec fundeclist	{  }
-	  | fundec		{  }
+fundeclist: fundec fundeclist	{ $$ = new absyn::FunDecList($1, $2) ; }
+	  | fundec		{  $$ = new absyn::FunDecList($1, nullptr) ; }
 
-tydec:   TYPE ID EQ ty {  }
+tydec:   TYPE ID EQ ty { $$ = new absyn::Namety(S_Symbol($2), $4) ; }
 
-ty:      ID {  }
-  |      LBRACE tyfields RBRACE {  }
-  |      ARRAY OF ID {  }
+ty:      ID { $$ = new absyn::NameTy(EM_tokPos, S_Symbol($1)) ; }
+  |      LBRACE tyfields RBRACE { $$ = new absyn::RecordTy(EM_tokPos, $2) ; }
+  |      ARRAY OF ID { $$ = new absyn::ArrayTy(EM_tokPos, S_Symbol($3)) ; }
 
-tyfields: /*epsilon*/    {  }
-        |  fieldseq      {  }
+tyfields: /*epsilon*/    { $$ = new absyn::FieldList(nullptr, nullptr) ; }
+        |  fieldseq      { $$ = $1 ; }
 
-fieldseq:  tyfield {  }
-        |  tyfield COMMA fieldseq  {  }
+fieldseq:  tyfield { $$ = new absyn::FieldList($1, nullptr) ; }
+        |  tyfield COMMA fieldseq  { $$ = new absyn::FieldList($1, $3) ; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 tyfield:   ID COLON ID   {  }
 
@@ -219,14 +244,14 @@ list:      exp {  }
 
 seq:       exp SEMICOLON list {  }
 
-reclist:   /*epsilon*/   {  }
+reclist:   /*epsilon*/   { /* efieldList */ }
        |   reclist2      {  }
               
 
 reclist2:    ID EQ exp   {  }
         |    ID EQ exp COMMA reclist2  {  }
 
-arglist:   /*epsilon*/    {  }
+arglist:   /*epsilon*/    { /* efieldList */ }
        |   arglist2       {  }
 
 arglist2:   exp {  }
@@ -234,8 +259,40 @@ arglist2:   exp {  }
 
 lvalue:   ID {$$ = new absyn::SimpleVar(EM_tokPos,S_Symbol($1)); }
       |   lvalue DOT ID {  }
-      |   lvalue LBRACK exp RBRACK {  }
+      |   lvalue LBRACK exp RBRACK { $$ = new absyn::SubscriptVar(EM_tokPos, new absyn::SimpleVar(EM_tokPos, really_typename($1)), $3) ; }
 %%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* this section is for user defined subroutines */
 
@@ -262,14 +319,10 @@ const absyn::Var* really_lvalue(absyn::Exp* really_an_lvalue)
 /* test that an lvalue is really a simple ID that could be a typename */
 S_symbol really_typename(absyn::Var* really_a_typename)
 {
-    if (dynamic_cast<absyn::SimpleVar*>(really_a_typename) == nullptr)
-    {
+    if (dynamic_cast<absyn::SimpleVar*>(really_a_typename) == NULL) {
       EM_error(really_a_typename->getPos(), "%s", "Illegal type name");
-      return 0;
-    }
-    else
-    {
+      return S_Symbol("<ERROR--Bad Type Name>");
+    } else {
       return dynamic_cast<absyn::SimpleVar*>(really_a_typename)->getSymbol();
     }
 }
-
