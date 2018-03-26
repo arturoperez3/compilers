@@ -98,8 +98,6 @@ S_symbol really_typename(absyn::Var* really_a_typename);
 
 %start program
 
-
-
 /* The next section is the rule section of the grammar file.  */
 /* That is where you will place your grammar for the Tiger    */
 /* language.                                                  */
