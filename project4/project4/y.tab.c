@@ -559,16 +559,16 @@ static const yytype_uint8 yytranslate[] =
 
 #if YYDEBUG
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
-static const yytype_uint16 yyrline[] =
+static const yytype_uint8 yyrline[] =
 {
        0,   110,   110,   112,   114,   116,   118,   120,   122,   124,
      126,   128,   130,   132,   134,   136,   138,   140,   142,   144,
      146,   148,   150,   152,   154,   156,   158,   160,   162,   164,
      169,   171,   173,   176,   177,   179,   180,   181,   188,   189,
      191,   192,   194,   196,   197,   198,   200,   201,   203,   204,
-     231,   233,   234,   236,   237,   239,   240,   242,   243,   245,
-     247,   248,   251,   252,   254,   255,   257,   258,   260,   261,
-     262
+     206,   208,   209,   211,   212,   214,   215,   217,   218,   220,
+     222,   223,   226,   227,   229,   230,   232,   233,   235,   236,
+     237
 };
 #endif
 
@@ -1759,127 +1759,127 @@ yyreduce:
     break;
 
   case 50:
-#line 231 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 206 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.field) = new absyn::Field(EM_tokPos, S_Symbol((yyvsp[-2].sval)), S_Symbol((yyvsp[0].sval))) ; }
 #line 1765 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 51:
-#line 233 "tig_parse.y" /* yacc.c:1646  */
-    { }
+#line 208 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.dec) = new absyn::VarDec(EM_tokPos, S_Symbol((yyvsp[-2].sval)), nullptr, (yyvsp[0].exp)) ; }
 #line 1771 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 52:
-#line 234 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 209 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.dec) = new absyn::VarDec(EM_tokPos, S_Symbol((yyvsp[-4].sval)), S_Symbol((yyvsp[-2].sval)), (yyvsp[0].exp)) ; }
 #line 1777 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 53:
-#line 236 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 211 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.fundec) = new absyn::FunDec(EM_tokPos, S_Symbol((yyvsp[-5].sval)), (yyvsp[-3].fieldList), nullptr, (yyvsp[0].exp)) ; }
 #line 1783 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 54:
-#line 237 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 212 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.fundec) = new absyn::FunDec(EM_tokPos, S_Symbol((yyvsp[-7].sval)), (yyvsp[-5].fieldList), S_Symbol((yyvsp[-2].sval)), (yyvsp[0].exp)) ; }
 #line 1789 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 55:
-#line 239 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 214 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.exp) = nullptr ; }
 #line 1795 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 56:
-#line 240 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 215 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.exp) = new absyn::SeqExp(EM_tokPos, (yyvsp[0].expList)) ; }
 #line 1801 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 57:
-#line 242 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 217 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.expList) = new absyn::ExpList((yyvsp[0].exp), nullptr) ;  }
 #line 1807 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 58:
-#line 243 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 218 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.expList) = new absyn::ExpList((yyvsp[-2].exp), (yyvsp[0].expList)) ; }
 #line 1813 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 59:
-#line 245 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 220 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.exp) = new absyn::SeqExp(EM_tokPos, (yyvsp[0].expList)) ; }
 #line 1819 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 60:
-#line 247 "tig_parse.y" /* yacc.c:1646  */
-    { /* efieldList */ }
+#line 222 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.efieldList) = nullptr ; }
 #line 1825 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 61:
-#line 248 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 223 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.efieldList) = new absyn::EFieldList(nullptr, (yyvsp[0].efieldList)) ; }
 #line 1831 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 62:
-#line 251 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 226 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.efieldList) = new absyn::EFieldList(new absyn::EField(S_Symbol((yyvsp[-2].sval)), (yyvsp[0].exp)), nullptr) ; }
 #line 1837 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 63:
-#line 252 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 227 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.efieldList) = new absyn::EFieldList(new absyn::EField(S_Symbol((yyvsp[-4].sval)), (yyvsp[-2].exp)), (yyvsp[0].efieldList)) ; }
 #line 1843 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 64:
-#line 254 "tig_parse.y" /* yacc.c:1646  */
-    { /* efieldList */ }
+#line 229 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.expList) = nullptr ; }
 #line 1849 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 65:
-#line 255 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 230 "tig_parse.y" /* yacc.c:1646  */
+    { /* $$ = new absyn::ExpList() */ }
 #line 1855 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 66:
-#line 257 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 232 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.expList) = new absyn::ExpList((yyvsp[0].exp), nullptr) ; }
 #line 1861 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 67:
-#line 258 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 233 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.expList) = new absyn::ExpList((yyvsp[-2].exp), (yyvsp[0].expList)) ; }
 #line 1867 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 68:
-#line 260 "tig_parse.y" /* yacc.c:1646  */
+#line 235 "tig_parse.y" /* yacc.c:1646  */
     {(yyval.var) = new absyn::SimpleVar(EM_tokPos,S_Symbol((yyvsp[0].sval))); }
 #line 1873 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 69:
-#line 261 "tig_parse.y" /* yacc.c:1646  */
-    {  }
+#line 236 "tig_parse.y" /* yacc.c:1646  */
+    { (yyval.var) = new absyn::FieldVar(EM_tokPos, (yyvsp[-2].var), S_Symbol((yyvsp[0].sval))) ; }
 #line 1879 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 70:
-#line 262 "tig_parse.y" /* yacc.c:1646  */
+#line 237 "tig_parse.y" /* yacc.c:1646  */
     { (yyval.var) = new absyn::SubscriptVar(EM_tokPos, new absyn::SimpleVar(EM_tokPos, really_typename((yyvsp[-3].var))), (yyvsp[-1].exp)) ; }
 #line 1885 "y.tab.c" /* yacc.c:1646  */
     break;
@@ -2113,7 +2113,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 263 "tig_parse.y" /* yacc.c:1906  */
+#line 238 "tig_parse.y" /* yacc.c:1906  */
 
 
 

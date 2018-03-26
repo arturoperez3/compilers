@@ -203,62 +203,37 @@ tyfields: /*epsilon*/    { $$ = new absyn::FieldList(nullptr, nullptr) ; }
 fieldseq:  tyfield { $$ = new absyn::FieldList($1, nullptr) ; }
         |  tyfield COMMA fieldseq  { $$ = new absyn::FieldList($1, $3) ; }
 
+tyfield:   ID COLON ID   { $$ = new absyn::Field(EM_tokPos, S_Symbol($1), S_Symbol($3)) ; }
 
+vardec:    VAR ID ASSIGN exp  { $$ = new absyn::VarDec(EM_tokPos, S_Symbol($2), nullptr, $4) ; }
+      |    VAR ID COLON ID ASSIGN exp  { $$ = new absyn::VarDec(EM_tokPos, S_Symbol($2), S_Symbol($4), $6) ; }
 
+fundec:    FUNCTION ID LPAREN tyfields RPAREN EQ exp   { $$ = new absyn::FunDec(EM_tokPos, S_Symbol($2), $4, nullptr, $7) ; }
+      |    FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp  { $$ = new absyn::FunDec(EM_tokPos, S_Symbol($2), $4, S_Symbol($7), $9) ; } 
 
+expseq:    /*epsilon*/    { $$ = nullptr ; }
+      |    list           { $$ = new absyn::SeqExp(EM_tokPos, $1) ; }
 
+list:      exp { $$ = new absyn::ExpList($1, nullptr) ;  }
+    |      exp SEMICOLON list  { $$ = new absyn::ExpList($1, $3) ; }
 
+seq:       exp SEMICOLON list { $$ = new absyn::SeqExp(EM_tokPos, $3) ; }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-tyfield:   ID COLON ID   {  }
-
-vardec:    VAR ID ASSIGN exp  { }
-      |    VAR ID COLON ID ASSIGN exp  {  }
-
-fundec:    FUNCTION ID LPAREN tyfields RPAREN EQ exp   {  }
-      |    FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp  {  } 
-
-expseq:    /*epsilon*/    {  }
-      |    list           {  }
-
-list:      exp {  }
-    |      exp SEMICOLON list  {  }
-
-seq:       exp SEMICOLON list {  }
-
-reclist:   /*epsilon*/   { /* efieldList */ }
-       |   reclist2      {  }
+reclist:   /*epsilon*/   { $$ = nullptr ; }
+       |   reclist2      { $$ = new absyn::EFieldList(nullptr, $1) ; }
               
 
-reclist2:    ID EQ exp   {  }
-        |    ID EQ exp COMMA reclist2  {  }
+reclist2:    ID EQ exp   { $$ = new absyn::EFieldList(new absyn::EField(S_Symbol($1), $3), nullptr) ; }
+        |    ID EQ exp COMMA reclist2  { $$ = new absyn::EFieldList(new absyn::EField(S_Symbol($1), $3), $5) ; }
 
-arglist:   /*epsilon*/    { /* efieldList */ }
-       |   arglist2       {  }
+arglist:   /*epsilon*/    { $$ = nullptr ; }
+       |   arglist2       { /* $$ = new absyn::ExpList() */ }
 
-arglist2:   exp {  }
-        |   exp COMMA arglist2 {  } 
+arglist2:   exp { $$ = new absyn::ExpList($1, nullptr) ; }
+        |   exp COMMA arglist2 { $$ = new absyn::ExpList($1, $3) ; } 
 
 lvalue:   ID {$$ = new absyn::SimpleVar(EM_tokPos,S_Symbol($1)); }
-      |   lvalue DOT ID {  }
+      |   lvalue DOT ID { $$ = new absyn::FieldVar(EM_tokPos, $1, S_Symbol($3)) ; }
       |   lvalue LBRACK exp RBRACK { $$ = new absyn::SubscriptVar(EM_tokPos, new absyn::SimpleVar(EM_tokPos, really_typename($1)), $3) ; }
 %%
 
