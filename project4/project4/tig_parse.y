@@ -1,10 +1,10 @@
 
 /***
-Name:
-Userid:
-Email:
-Descrption:
-Last modified:
+Name: Arturo Perez
+Userid: perezae
+Email: arturo.e.perez@vanderbilt.edu
+Descrption: This program will construct an AST for the Tiger langauge.
+Last modified: 26 March 2018
 ***/
 
 
@@ -105,17 +105,17 @@ S_symbol really_typename(absyn::Var* really_a_typename);
 /* build an abstract syntax tree.                             */
 %%
 
-program:	exp	{ absyn_root = $1; }
+program:	exp	{ absyn_root = $1 ; }
 
-exp:	INT { $$ = new absyn::IntExp(EM_tokPos, $1); }
+exp:	INT { $$ = new absyn::IntExp(EM_tokPos, $1) ; }
 
-   |    STRING { $$ = new absyn::StringExp(EM_tokPos, Appel_String($1)); }
+   |    STRING { $$ = new absyn::StringExp(EM_tokPos, Appel_String($1)) ; }
 
-   |    BREAK { $$ = new absyn::BreakExp(EM_tokPos); }
+   |    BREAK { $$ = new absyn::BreakExp(EM_tokPos) ; }
 
-   |    lvalue { $$ = new absyn::VarExp(EM_tokPos,$1); }
+   |    lvalue { $$ = new absyn::VarExp(EM_tokPos,$1) ; }
 
-   |    NIL { $$ = new absyn::NilExp(EM_tokPos); }
+   |    NIL { $$ = new absyn::NilExp(EM_tokPos) ; }
 
    |    exp PLUS exp { $$ = new absyn::OpExp(EM_tokPos, absyn::OpExp::EXP_PLUS, $1, $3) ; }
 
@@ -125,7 +125,7 @@ exp:	INT { $$ = new absyn::IntExp(EM_tokPos, $1); }
 
    |    exp DIVIDE exp { $$ = new absyn::OpExp(EM_tokPos, absyn::OpExp::EXP_DIV, $1, $3) ;  }
 
-   |    MINUS exp %prec UMINUS  {  }
+   |    MINUS exp %prec UMINUS  { $$ = new absyn::OpExp(EM_tokPos, absyn::OpExp::EXP_MINUS, new absyn::IntExp(EM_tokPos,0), $2) ; }
 
    |    exp EQ exp { $$ = new absyn::OpExp(EM_tokPos, absyn::OpExp::EXP_EQ, $1, $3) ; }
 
@@ -139,7 +139,7 @@ exp:	INT { $$ = new absyn::IntExp(EM_tokPos, $1); }
 
    |    exp LE exp { $$ = new absyn::OpExp(EM_tokPos, absyn::OpExp::EXP_LE, $1, $3) ;  }
 
-   |    exp AND exp { $$ = new absyn::IfExp(EM_tokPos, $1, $3, nullptr) ; }
+   |    exp AND exp { $$ = new absyn::IfExp(EM_tokPos, $1, $3, new absyn::IntExp(EM_tokPos,0)) ; }
 
    |    exp OR exp { $$ = new absyn::IfExp(EM_tokPos, $1, new absyn::IntExp(EM_tokPos,1), $3) ; }
 
@@ -153,11 +153,11 @@ exp:	INT { $$ = new absyn::IntExp(EM_tokPos, $1); }
 
    |    FOR ID ASSIGN exp TO exp DO exp %prec STMT  { $$ = new absyn::ForExp(EM_tokPos, S_Symbol($2), $4, $6, $8) ; }
 
-   |    LPAREN RPAREN { $$ = new absyn::SeqExp(EM_tokPos, nullptr) ;  }
+   |    LPAREN RPAREN { $$ = new absyn::SeqExp(EM_tokPos, nullptr) ; }
 
    |    LPAREN exp RPAREN { $$ = $2 ; }
 
-   |    LPAREN seq RPAREN { $$ = $2 ;  }
+   |    LPAREN seq RPAREN { $$ = $2 ; }
 
    |    lvalue LBRACK exp RBRACK OF exp %prec ARRAY_LITERAL { $$ = new absyn::ArrayExp(EM_tokPos, really_typename($1), $3, $6) ; }
         // NOTE: used 'lvalue' rather than 'ID' to avoid a conflict
@@ -195,7 +195,7 @@ ty:      ID { $$ = new absyn::NameTy(EM_tokPos, S_Symbol($1)) ; }
   |      LBRACE tyfields RBRACE { $$ = new absyn::RecordTy(EM_tokPos, $2) ; }
   |      ARRAY OF ID { $$ = new absyn::ArrayTy(EM_tokPos, S_Symbol($3)) ; }
 
-tyfields: /*epsilon*/    { $$ = new absyn::FieldList(nullptr, nullptr) ; }
+tyfields: /*epsilon*/    { $$ = nullptr ; }
         |  fieldseq      { $$ = $1 ; }
 
 fieldseq:  tyfield { $$ = new absyn::FieldList($1, nullptr) ; }
@@ -209,13 +209,13 @@ vardec:    VAR ID ASSIGN exp  { $$ = new absyn::VarDec(EM_tokPos, S_Symbol($2), 
 fundec:    FUNCTION ID LPAREN tyfields RPAREN EQ exp   { $$ = new absyn::FunDec(EM_tokPos, S_Symbol($2), $4, nullptr, $7) ; }
       |    FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp  { $$ = new absyn::FunDec(EM_tokPos, S_Symbol($2), $4, S_Symbol($7), $9) ; } 
 
-expseq:    /*epsilon*/    { $$ = nullptr ; }
+expseq:    /*epsilon*/    { $$ = new absyn::SeqExp(EM_tokPos, nullptr) ; }
       |    list           { $$ = new absyn::SeqExp(EM_tokPos, $1) ; }
 
 list:      exp { $$ = new absyn::ExpList($1, nullptr) ;  }
     |      exp SEMICOLON list  { $$ = new absyn::ExpList($1, $3) ; }
 
-seq:       exp SEMICOLON list { $$ = new absyn::SeqExp(EM_tokPos, $3) ; }
+seq:       exp SEMICOLON list { $$ = new absyn::SeqExp(EM_tokPos, new absyn::ExpList($1, $3)) ; }
 
 reclist:   /*epsilon*/   { $$ = nullptr ; }
        |   reclist2      { $$ = new absyn::EFieldList(nullptr, $1) ; }
@@ -225,47 +225,15 @@ reclist2:    ID EQ exp   { $$ = new absyn::EFieldList(new absyn::EField(S_Symbol
         |    ID EQ exp COMMA reclist2  { $$ = new absyn::EFieldList(new absyn::EField(S_Symbol($1), $3), $5) ; }
 
 arglist:   /*epsilon*/    { $$ = nullptr ; }
-       |   arglist2       { /* $$ = new absyn::ExpList() */ }
+       |   arglist2       { $$ = $1 ; }
 
 arglist2:   exp { $$ = new absyn::ExpList($1, nullptr) ; }
         |   exp COMMA arglist2 { $$ = new absyn::ExpList($1, $3) ; } 
 
-lvalue:   ID {$$ = new absyn::SimpleVar(EM_tokPos,S_Symbol($1)); }
+lvalue:   ID {$$ = new absyn::SimpleVar(EM_tokPos,S_Symbol($1)) ; }
       |   lvalue DOT ID { $$ = new absyn::FieldVar(EM_tokPos, $1, S_Symbol($3)) ; }
       |   lvalue LBRACK exp RBRACK { $$ = new absyn::SubscriptVar(EM_tokPos, new absyn::SimpleVar(EM_tokPos, really_typename($1)), $3) ; }
 %%
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* this section is for user defined subroutines */
 
