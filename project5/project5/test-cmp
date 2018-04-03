@@ -1,0 +1,18 @@
+#!/bin/csh
+
+# run parser on all Appel test programs and compare output to parsetest-good
+
+echo "Running Appel test cases"
+setenv AppelDir ../testcases
+foreach i ($AppelDir/*.tig) 
+ echo "--------------------------------------------------------------- "
+ echo "parsing " $i  
+ rm -f tmp1 tmp2
+ echo "  running parsetest"
+ ./parsetest $i >tmp1
+ echo "  running parsetest-good"
+ ./parsetest-good $i >tmp2
+ echo "  comparing results"
+ diff tmp1 tmp2
+end
+
