@@ -456,8 +456,8 @@ int absyn::IntExp::getIntt(void) const { return intt; }
 absyn::IntExp::~IntExp() {}
 
 Ty_ty absyn::IntExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    //EM_error(this->getPos(), "Type checking of IntExp is not yet implemented");
-    return Ty_Int();
+    EM_error(this->getPos(), "Type checking of IntExp is not yet implemented");
+    return Ty_Error();
 }
 
 void absyn::IntExp::print(FILE *out, int d) {
@@ -480,26 +480,8 @@ absyn::LetExp::~LetExp() {
 }
 
 Ty_ty absyn::LetExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    // EM_error(this->getPos(), "Type checking of LetExp is not yet implemented");
-    // return Ty_Error();
-
-    // absyn::OpExp::OpType oper = this->getOper();
-    // if (oper == absyn::OpExp::EXP_PLUS) {
-    //      if (!matchTypes((this->getLeft())->typeCheck(venv, tenv), Ty_Int())) {
-    //          return Ty_Error();
-    //      } if (!matchTypes((this->getRight())->typeCheck(venv, tenv), Ty_Int())) {
-    //          return Ty_Error();
-    //      }
-    //      return Ty_Int();
-    // }
-
-    Env_beginScope(venv, tenv);
-    for (absyn::DecList* d = this -> getDecs(); d != nullptr; d = d->getRest()){ 
-        d -> getHead() -> typeCheck(venv, tenv);
-    }
-    Ty_ty t = (this -> getBody()) -> typeCheck(venv, tenv);
-    Env_endScope(venv, tenv);
-    return t;
+    EM_error(this->getPos(), "Type checking of LetExp is not yet implemented");
+    return Ty_Error();
 }
 
 void absyn::LetExp::print(FILE *out, int d) {
@@ -597,23 +579,8 @@ absyn::OpExp::~OpExp() {
 }
 
 Ty_ty absyn::OpExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    // EM_error(this->getPos(), "Type checking of OpExp is not yet implemented");
-    // return Ty_Error();
-
-
-    absyn::OpExp::OpType oper = this->getOper();
-    if (oper == absyn::OpExp::EXP_PLUS) {
-         if (!matchTypes((this->getLeft())->typeCheck(venv, tenv), Ty_Int())) {
-             return Ty_Error();
-         } if (!matchTypes((this->getRight())->typeCheck(venv, tenv), Ty_Int())) {
-             return Ty_Error();
-         }
-         return Ty_Int();
-    }
-
-
-
-
+    EM_error(this->getPos(), "Type checking of OpExp is not yet implemented");
+    return Ty_Error();
 }
 
 void absyn::OpExp::print(FILE *out, int d) {
@@ -637,17 +604,8 @@ absyn::ExpList *absyn::SeqExp::getSeq(void) const { return seq; }
 absyn::SeqExp::~SeqExp() { delete seq; }
 
 Ty_ty absyn::SeqExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    // EM_error(this->getPos(), "Type checking of SeqExp is not yet implemented");
-    // return Ty_Error();
-
-    ExpList* e;
-    Ty_ty t;
-    for (e = this -> getSeq(); e != nullptr; e = e -> getRest()) { 
-        t = e -> getHead() -> typeCheck(venv, tenv);
-    }
-
-    return t;
-
+    EM_error(this->getPos(), "Type checking of SeqExp is not yet implemented");
+    return Ty_Error();
 }
 
 void absyn::SeqExp::print(FILE *out, int d) {
@@ -818,55 +776,7 @@ bool absyn::VarDec::getEscape(void) const { return escape; }
 absyn::VarDec::~VarDec() { delete init; }
 
 void absyn::VarDec::typeCheck(v_tbl venv, t_tbl tenv) const {
-    // EM_error(this->getPos(), "Type checking of VarDec is not yet implemented");
-    Ty_ty init =  (this->getInit())->typeCheck(venv, tenv); 
-    if (matchTypes(init, Ty_Nil())) {
-        EM_error(this->getPos(), "Type of RHS cannot be nil");
-        return;
-    }
-    if (matchTypes(init, Ty_Void())) {
-        EM_error(this->getPos(), "Type of RHS cannot be void");
-        return;
-    }
-
-    S_symbol t = this -> getType();
-    if (t == nullptr ) {
-        if (matchTypes(init, Ty_Nil())) {
-            EM_error(this->getPos(), "Type of RHS cannot be nil"); //change this slightly
-        } else {
-            V_tbl_enter(venv, this->getVar() , E_VarEntry(init));
-        }
-        return;
-        // check to be not nil 
-        // if it is nil, abort
-        // if its not nil, then insert into vtable
-    } 
-
-    Ty_ty tt = T_tbl_look(venv, t);
-
-    // now check if look up succeed ( not nullptr )
-
-    if (tt == nullptr) {
-        // report error, return
-        EM_error(this->getPos(), "Type %s has not been declared", S_name(t));
-        return;
-    }
-
-    tt = actualTy(tt);
-
-    if ((this->getInit())->typeCheck(venv, tenv) == Ty_Nil() )
-        if (tt->kind != Ty_record) {
-        EM_error(this->getPos(), "Type of RHS is nil but actual type of LHS is not Record");
-        return;
-    }
-
-    if (!matchTypes((this->getInit())->typeCheck(venv, tenv), T_tbl_look(tenv, this->getType()))) {
-        EM_error(this->getPos(), "Type of LHS does not match type of RHS");
-        return;
-    }
-
-    // what if you didn't give me getInit
-    V_tbl_enter(venv, this->getVar() , E_VarEntry(tt));
+    EM_error(this->getPos(), "Type checking of VarDec is not yet implemented");
 }
 
 void absyn::VarDec::print(FILE *out, int d) {
@@ -891,9 +801,8 @@ absyn::Var *absyn::VarExp::getVar(void) const { return var; }
 absyn::VarExp::~VarExp() { delete var; }
 
 Ty_ty absyn::VarExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    // EM_error(this->getPos(), "Type checking of VarExp is not yet implemented");
-    // return Ty_Error();
-    return V_tbl_look(venv, )
+    EM_error(this->getPos(), "Type checking of VarExp is not yet implemented");
+    return Ty_Error();
 }
 
 void absyn::VarExp::print(FILE *out, int d) {

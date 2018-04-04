@@ -1658,7 +1658,7 @@ yyreduce:
 
   case 33:
 #line 174 "tig_parse.y" /* yacc.c:1646  */
-    { (yyval.decList) = new absyn::DecList(nullptr, nullptr) ; }
+    { (yyval.decList) = nullptr ; }
 #line 1663 "y.tab.c" /* yacc.c:1646  */
     break;
 

@@ -171,7 +171,7 @@ exp:	INT { $$ = new absyn::IntExp(EM_tokPos, $1) ; }
    |    LET decs IN expseq END { $$ = new absyn::LetExp(EM_tokPos, $2, $4 ) ; }
 
 
-decs:   /* epsilon */	  { $$ = new absyn::DecList(nullptr, nullptr) ; }
+decs:   /* epsilon */	  { $$ = nullptr ; }
    |    dec decs          { $$ = new absyn::DecList($1, $2); }
 
 dec:    tydeclist   { $$ = new absyn::TypeDec(EM_tokPos, $1) ; }

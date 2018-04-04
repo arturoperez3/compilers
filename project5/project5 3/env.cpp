@@ -32,9 +32,6 @@ t_tbl E_base_tenv()
 
   /* add code to initialize type env */
 
-  T_tbl_enter(it, S_Symbol("int"), Ty_Int());
-  T_tbl_enter(it, S_Symbol("string"), Ty_String());
-  
   return it;
 }
 
@@ -44,20 +41,6 @@ v_tbl E_base_venv()
   v_tbl it = S_empty();
 
   /* add code to initialize value env */
-
-  V_tbl_enter(it, S_Symbol("print"), E_FunEntry(Ty_TyList(Ty_String(), nullptr), Ty_Void()));
-  V_tbl_enter(it, S_Symbol("flush"), E_FunEntry(nullptr, Ty_Void()));
-  V_tbl_enter(it, S_Symbol("getchar"), E_FunEntry(nullptr, Ty_String()));
-  V_tbl_enter(it, S_Symbol("ord"), E_FunEntry(Ty_TyList(Ty_String(), nullptr), Ty_Int()));
-  V_tbl_enter(it, S_Symbol("chr"), E_FunEntry(Ty_TyList(Ty_Int(), nullptr), Ty_String()));
-  V_tbl_enter(it, S_Symbol("size"), E_FunEntry(Ty_TyList(Ty_String(), nullptr), Ty_Int()));
-  V_tbl_enter(it, S_Symbol("substring"), E_FunEntry(Ty_TyList(Ty_String(), 
-                                Ty_TyList(Ty_Int(), Ty_TyList(Ty_Int(), nullptr))), Ty_String()));
-  V_tbl_enter(it, S_Symbol("concat"), E_FunEntry(Ty_TyList(Ty_String(), Ty_TyList(Ty_String(), nullptr)), Ty_String()));
-  V_tbl_enter(it, S_Symbol("not"), E_FunEntry(Ty_TyList(Ty_Int(), nullptr), Ty_Int()));
-  V_tbl_enter(it, S_Symbol("exit"), E_FunEntry(Ty_TyList(Ty_Int(), nullptr), Ty_Void()));
-  V_tbl_enter(it, S_Symbol("printint"), E_FunEntry(Ty_TyList(Ty_Int(), nullptr), Ty_Void()));
-  V_tbl_enter(it, S_Symbol("readint"), E_FunEntry(nullptr, Ty_Int()));
 
   return it;
 }
