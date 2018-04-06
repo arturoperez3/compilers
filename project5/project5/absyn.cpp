@@ -602,18 +602,18 @@ Ty_ty absyn::OpExp::typeCheck(v_tbl venv, t_tbl tenv) const {
 
 
     absyn::OpExp::OpType oper = this->getOper();
-    if (oper == absyn::OpExp::EXP_PLUS) {
+    if (oper == absyn::OpExp::EXP_PLUS || oper == absyn::OpExp::EXP_MINUS
+    || oper == absyn::OpExp::EXP_MUL || oper == absyn::OpExp::EXP_DIV) {
          if (!matchTypes((this->getLeft())->typeCheck(venv, tenv), Ty_Int())) {
+             EM_error(this->getPos(), "left operand is not of type int");
              return Ty_Error();
          } if (!matchTypes((this->getRight())->typeCheck(venv, tenv), Ty_Int())) {
+             EM_error(this->getPos(), "right operand is not of type int");
              return Ty_Error();
          }
          return Ty_Int();
     }
-
-
-
-
+    return Ty_Error(); 
 }
 
 void absyn::OpExp::print(FILE *out, int d) {
@@ -671,8 +671,28 @@ S_symbol absyn::SimpleVar::getSymbol(void) const { return sym; }
 absyn::SimpleVar::~SimpleVar() {}
 
 Ty_ty absyn::SimpleVar::typeCheck(v_tbl venv, t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of SimpleVar is not yet implemented");
-    return Ty_Error();
+    // printf("SimpleVar");
+
+    E_enventry v = V_tbl_look(venv, (this->getSymbol()));
+
+    if (v == NULL) {
+        EM_error(this->getPos(), "Undeclared variable: %s", S_name(this->getSymbol()));
+        return Ty_Error();
+    }
+
+    if (v->kind != E_varEntry) {
+        EM_error(this->getPos(), "%s is not a variable.", S_name(this->getSymbol()));
+        return Ty_Error();
+    }
+
+    Ty_ty t = v->u.var.ty;
+
+    if (t == nullptr) {
+        EM_error(this->getPos(), "%s is of undeclared type", S_name(this->getSymbol()));
+        return Ty_Error();
+    }
+    return t;
+
 }
 
 void absyn::SimpleVar::print(FILE *out, int d) {
@@ -819,6 +839,7 @@ absyn::VarDec::~VarDec() { delete init; }
 
 void absyn::VarDec::typeCheck(v_tbl venv, t_tbl tenv) const {
     // EM_error(this->getPos(), "Type checking of VarDec is not yet implemented");
+    // printf("VarDec ");
     Ty_ty init =  (this->getInit())->typeCheck(venv, tenv); 
     if (matchTypes(init, Ty_Nil())) {
         EM_error(this->getPos(), "Type of RHS cannot be nil");
@@ -842,7 +863,7 @@ void absyn::VarDec::typeCheck(v_tbl venv, t_tbl tenv) const {
         // if its not nil, then insert into vtable
     } 
 
-    Ty_ty tt = T_tbl_look(venv, t);
+    Ty_ty tt = T_tbl_look(tenv, t);
 
     // now check if look up succeed ( not nullptr )
 
@@ -865,6 +886,7 @@ void absyn::VarDec::typeCheck(v_tbl venv, t_tbl tenv) const {
         return;
     }
 
+    // printf(" WE MADE IT ");
     // what if you didn't give me getInit
     V_tbl_enter(venv, this->getVar() , E_VarEntry(tt));
 }
@@ -893,7 +915,8 @@ absyn::VarExp::~VarExp() { delete var; }
 Ty_ty absyn::VarExp::typeCheck(v_tbl venv, t_tbl tenv) const {
     // EM_error(this->getPos(), "Type checking of VarExp is not yet implemented");
     // return Ty_Error();
-    return V_tbl_look(venv, )
+    // printf("VarExp");
+    return (this->getVar())->typeCheck(venv, tenv);
 }
 
 void absyn::VarExp::print(FILE *out, int d) {

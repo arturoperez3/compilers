@@ -30,6 +30,8 @@ t_tbl E_base_tenv()
 {
   t_tbl it = S_empty();
 
+  printf("t env ");
+
   /* add code to initialize type env */
 
   T_tbl_enter(it, S_Symbol("int"), Ty_Int());
@@ -42,6 +44,8 @@ t_tbl E_base_tenv()
 v_tbl E_base_venv()
 {
   v_tbl it = S_empty();
+
+    printf("V env ");
 
   /* add code to initialize value env */
 
