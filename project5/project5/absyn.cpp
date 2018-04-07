@@ -109,8 +109,16 @@ absyn::ArrayExp::~ArrayExp() {
 }
 
 Ty_ty absyn::ArrayExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of ArrayExp is not yet implemented");
-    return Ty_Error();
+    S_symbol s = this->getType();
+    Ty_ty t = T_tbl_look(tenv, s);
+    t = actualTy(t);
+
+    // this is wrong, we should be throwing error if type is not an array type
+    if (t->kind == Ty_array) {
+        EM_error(this->getPos(), "Type is not array type");
+        return Ty_Error();
+    }
+    return t;
 }
 
 void absyn::ArrayExp::print(FILE *out, int d) {
@@ -131,8 +139,7 @@ S_symbol absyn::ArrayTy::getArray(void) const { return array; }
 absyn::ArrayTy::~ArrayTy() {}
 
 Ty_ty absyn::ArrayTy::typeCheck(t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of ArrayTy is not yet implemented");
-    return Ty_Error();
+    return T_tbl_look(tenv, this->getArray());
 }
 
 void absyn::ArrayTy::print(FILE *out, int d) {
@@ -155,8 +162,10 @@ absyn::AssignExp::~AssignExp() {
 }
 
 Ty_ty absyn::AssignExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of AssignExp is not yet implemented");
-    return Ty_Error();
+    if (!matchTypes(this->getVar()->typeCheck(venv, tenv), this->getExp()->typeCheck(venv, tenv))) {
+        EM_error(this->getPos(), "Assignment statement type mismatch.");
+    }
+    return this->getExp()->typeCheck(venv, tenv);
 }
 
 void absyn::AssignExp::print(FILE *out, int d) {
@@ -430,8 +439,22 @@ absyn::IfExp::~IfExp() {
 }
 
 Ty_ty absyn::IfExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of IfExp is not yet implemented");
-    return Ty_Error();
+    if (!matchTypes(this->getTest()->typeCheck(venv, tenv), Ty_Int())) {
+        EM_error(this->getPos(), "Test clause needs to be of type int.");
+        return Ty_Error();
+    }
+    if (!matchTypes(this->getElse()->typeCheck(venv, tenv), Ty_Error())) {
+        if (!matchTypes(this->getThen()->typeCheck(venv, tenv), this->getElse()->typeCheck(venv, tenv))) {
+            EM_error(this->getPos(), "Then and Else clauses need to be of the same type.");
+            return Ty_Error();
+        }
+        return this->getThen()->typeCheck(venv, tenv);
+    }
+
+    if (!matchTypes(this->getThen()->typeCheck(venv, tenv), Ty_Void())) {
+        EM_error(this->getPos(), "Then clause must be type void");
+    }
+    return Ty_Void();
 }
 
 void absyn::IfExp::print(FILE *out, int d) {
@@ -456,7 +479,6 @@ int absyn::IntExp::getIntt(void) const { return intt; }
 absyn::IntExp::~IntExp() {}
 
 Ty_ty absyn::IntExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    //EM_error(this->getPos(), "Type checking of IntExp is not yet implemented");
     return Ty_Int();
 }
 
@@ -480,19 +502,6 @@ absyn::LetExp::~LetExp() {
 }
 
 Ty_ty absyn::LetExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    // EM_error(this->getPos(), "Type checking of LetExp is not yet implemented");
-    // return Ty_Error();
-
-    // absyn::OpExp::OpType oper = this->getOper();
-    // if (oper == absyn::OpExp::EXP_PLUS) {
-    //      if (!matchTypes((this->getLeft())->typeCheck(venv, tenv), Ty_Int())) {
-    //          return Ty_Error();
-    //      } if (!matchTypes((this->getRight())->typeCheck(venv, tenv), Ty_Int())) {
-    //          return Ty_Error();
-    //      }
-    //      return Ty_Int();
-    // }
-
     Env_beginScope(venv, tenv);
     for (absyn::DecList* d = this -> getDecs(); d != nullptr; d = d->getRest()){ 
         d -> getHead() -> typeCheck(venv, tenv);
@@ -525,8 +534,7 @@ S_symbol absyn::NameTy::getName(void) const { return name; }
 absyn::NameTy::~NameTy() {}
 
 Ty_ty absyn::NameTy::typeCheck(t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of NameTy is not yet implemented");
-    return Ty_Error();
+    return T_tbl_look(tenv, this->getName());
 }
 
 void absyn::NameTy::print(FILE *out, int d) {
@@ -566,8 +574,7 @@ absyn::NilExp::NilExp(int line) : absyn::Exp(line) {}
 absyn::NilExp::~NilExp() {}
 
 Ty_ty absyn::NilExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of NilExp is not yet implemented");
-    return Ty_Error();
+    return Ty_Nil();
 }
 
 void absyn::NilExp::print(FILE *out, int d) {
@@ -604,15 +611,37 @@ Ty_ty absyn::OpExp::typeCheck(v_tbl venv, t_tbl tenv) const {
     absyn::OpExp::OpType oper = this->getOper();
     if (oper == absyn::OpExp::EXP_PLUS || oper == absyn::OpExp::EXP_MINUS
     || oper == absyn::OpExp::EXP_MUL || oper == absyn::OpExp::EXP_DIV) {
-         if (!matchTypes((this->getLeft())->typeCheck(venv, tenv), Ty_Int())) {
-             EM_error(this->getPos(), "left operand is not of type int");
+         if (!matchTypes(this->getLeft()->typeCheck(venv, tenv), Ty_Int())) {
+             EM_error(this->getPos(), "Cannot use arithmetic operator where left operand "
+             "is not of type int");
              return Ty_Error();
-         } if (!matchTypes((this->getRight())->typeCheck(venv, tenv), Ty_Int())) {
-             EM_error(this->getPos(), "right operand is not of type int");
+         } if (!matchTypes(this->getRight()->typeCheck(venv, tenv), Ty_Int())) {
+             EM_error(this->getPos(), "Cannot use arithmetic operator where right operand "
+             "is not of type int");
              return Ty_Error();
          }
          return Ty_Int();
-    }
+    } 
+    else if (oper == absyn::OpExp::EXP_GT || oper == absyn::OpExp::EXP_GE
+    || oper == absyn::OpExp::EXP_LT || oper == absyn::OpExp::EXP_LE) {
+         if (!matchTypes(this->getLeft()->typeCheck(venv, tenv), Ty_Int()) && 
+            !matchTypes(this->getLeft()->typeCheck(venv, tenv), Ty_String())) {
+             EM_error(this->getPos(), "Cannot use relational operator where left operand is not "
+             "of type int or string");
+             return Ty_Error();
+         } if (!matchTypes(this->getRight()->typeCheck(venv, tenv), Ty_Int()) && 
+            !matchTypes(this->getRight()->typeCheck(venv, tenv), Ty_String())) {
+             EM_error(this->getPos(), "Cannot use relational operator where right operand is not "
+             "of type int or string");
+             return Ty_Error();
+         }
+         return Ty_Int();
+    } else {
+        if (!matchTypes(this->getLeft()->typeCheck(venv, tenv), this->getRight()->typeCheck(venv, tenv))) {
+            EM_error(this->getPos(), "Cannot use equality operator on operands of different types");
+            return Ty_Error();
+        }
+    } 
     return Ty_Error(); 
 }
 
@@ -637,9 +666,6 @@ absyn::ExpList *absyn::SeqExp::getSeq(void) const { return seq; }
 absyn::SeqExp::~SeqExp() { delete seq; }
 
 Ty_ty absyn::SeqExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    // EM_error(this->getPos(), "Type checking of SeqExp is not yet implemented");
-    // return Ty_Error();
-
     ExpList* e;
     Ty_ty t;
     for (e = this -> getSeq(); e != nullptr; e = e -> getRest()) { 
@@ -647,7 +673,6 @@ Ty_ty absyn::SeqExp::typeCheck(v_tbl venv, t_tbl tenv) const {
     }
 
     return t;
-
 }
 
 void absyn::SeqExp::print(FILE *out, int d) {
@@ -671,8 +696,6 @@ S_symbol absyn::SimpleVar::getSymbol(void) const { return sym; }
 absyn::SimpleVar::~SimpleVar() {}
 
 Ty_ty absyn::SimpleVar::typeCheck(v_tbl venv, t_tbl tenv) const {
-    // printf("SimpleVar");
-
     E_enventry v = V_tbl_look(venv, (this->getSymbol()));
 
     if (v == NULL) {
@@ -734,8 +757,7 @@ appel_string absyn::StringExp::getStringg(void) const { return stringg; }
 absyn::StringExp::~StringExp() {}
 
 Ty_ty absyn::StringExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of StringExp is not yet implemented");
-    return Ty_Error();
+    return Ty_String();
 }
 
 void absyn::StringExp::print(FILE *out, int d) {
@@ -805,7 +827,10 @@ absyn::NametyList *absyn::TypeDec::getType(void) const { return type; }
 absyn::TypeDec::~TypeDec() { delete type; }
 
 void absyn::TypeDec::typeCheck(v_tbl venv, t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of TypeDec is not yet implemented");
+    NametyList* t;
+    for (t = this -> getType(); t != nullptr; t = t -> getRest()) { 
+        T_tbl_enter(tenv, t->getHead()->getName(), t->getHead()->getType()->typeCheck(tenv));
+    }
 }
 
 void absyn::TypeDec::print(FILE *out, int d) {
@@ -913,9 +938,6 @@ absyn::Var *absyn::VarExp::getVar(void) const { return var; }
 absyn::VarExp::~VarExp() { delete var; }
 
 Ty_ty absyn::VarExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    // EM_error(this->getPos(), "Type checking of VarExp is not yet implemented");
-    // return Ty_Error();
-    // printf("VarExp");
     return (this->getVar())->typeCheck(venv, tenv);
 }
 

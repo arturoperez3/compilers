@@ -28,9 +28,8 @@ E_enventry E_FunEntry(Ty_tyList formals, Ty_ty result)
 /* create base type environment */
 t_tbl E_base_tenv()
 {
+  
   t_tbl it = S_empty();
-
-  printf("t env ");
 
   /* add code to initialize type env */
 
@@ -43,9 +42,8 @@ t_tbl E_base_tenv()
 /* create base value environment */
 v_tbl E_base_venv()
 {
-  v_tbl it = S_empty();
 
-    printf("V env ");
+  v_tbl it = S_empty();
 
   /* add code to initialize value env */
 

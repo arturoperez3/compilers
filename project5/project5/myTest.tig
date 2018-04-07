@@ -1,6 +1,15 @@
 let
-	var a := 1
-	var b := 2
+	type aa = array of int
+	type bb = aa
+	type cc = bb
+	type d = int
+	var arr1:aa := aa [10] of 0 
+
+	type i = int
+	type s = string
+	var b:i := 5
+	var c:i := 6
+
 in 
-	a > b 
+	(b := c; if (10 > 20) then 30 else 40)
 end
