@@ -111,10 +111,14 @@ absyn::ArrayExp::~ArrayExp() {
 Ty_ty absyn::ArrayExp::typeCheck(v_tbl venv, t_tbl tenv) const {
     S_symbol s = this->getType();
     Ty_ty t = T_tbl_look(tenv, s);
+    if (t == nullptr) {
+        EM_error(this->getPos(), "Type has not been declared in this scope");
+        return Ty_Error();
+    }
     t = actualTy(t);
 
     // this is wrong, we should be throwing error if type is not an array type
-    if (t->kind == Ty_array) {
+    if (t->kind != Ty_array) {
         EM_error(this->getPos(), "Type is not array type");
         return Ty_Error();
     }
@@ -139,7 +143,13 @@ S_symbol absyn::ArrayTy::getArray(void) const { return array; }
 absyn::ArrayTy::~ArrayTy() {}
 
 Ty_ty absyn::ArrayTy::typeCheck(t_tbl tenv) const {
-    return T_tbl_look(tenv, this->getArray());
+    Ty_ty t = T_tbl_look(tenv, this->getArray());
+
+    if (t == nullptr) {
+        EM_error(this->getPos(), "Array type does not exist");
+        return Ty_Error();
+    }
+    return Ty_Array(t);
 }
 
 void absyn::ArrayTy::print(FILE *out, int d) {
@@ -865,7 +875,8 @@ absyn::VarDec::~VarDec() { delete init; }
 void absyn::VarDec::typeCheck(v_tbl venv, t_tbl tenv) const {
     // EM_error(this->getPos(), "Type checking of VarDec is not yet implemented");
     // printf("VarDec ");
-    Ty_ty init =  (this->getInit())->typeCheck(venv, tenv); 
+    Ty_ty init =  this->getInit()->typeCheck(venv, tenv);
+    init = actualTy(init); 
     if (matchTypes(init, Ty_Nil())) {
         EM_error(this->getPos(), "Type of RHS cannot be nil");
         return;
@@ -900,19 +911,18 @@ void absyn::VarDec::typeCheck(v_tbl venv, t_tbl tenv) const {
 
     tt = actualTy(tt);
 
-    if ((this->getInit())->typeCheck(venv, tenv) == Ty_Nil() )
+    if (matchTypes(init, Ty_Nil())) {
         if (tt->kind != Ty_record) {
-        EM_error(this->getPos(), "Type of RHS is nil but actual type of LHS is not Record");
-        return;
+            EM_error(this->getPos(), "Type of RHS is nil but actual type of LHS is not Record");
+            return;
+        }
     }
 
-    if (!matchTypes((this->getInit())->typeCheck(venv, tenv), T_tbl_look(tenv, this->getType()))) {
+    if (matchTypes(init, tt)) {
         EM_error(this->getPos(), "Type of LHS does not match type of RHS");
         return;
     }
 
-    // printf(" WE MADE IT ");
-    // what if you didn't give me getInit
     V_tbl_enter(venv, this->getVar() , E_VarEntry(tt));
 }
 

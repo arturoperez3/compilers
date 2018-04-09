@@ -1826,7 +1826,7 @@ yyreduce:
 
   case 61:
 #line 221 "tig_parse.y" /* yacc.c:1646  */
-    { (yyval.efieldList) = new absyn::EFieldList(nullptr, (yyvsp[0].efieldList)) ; }
+    { (yyval.efieldList) = (yyvsp[0].efieldList) ; }
 #line 1831 "y.tab.c" /* yacc.c:1646  */
     break;
 
@@ -1880,7 +1880,7 @@ yyreduce:
 
   case 70:
 #line 235 "tig_parse.y" /* yacc.c:1646  */
-    { (yyval.var) = new absyn::SubscriptVar(EM_tokPos, new absyn::SimpleVar(EM_tokPos, really_typename((yyvsp[-3].var))), (yyvsp[-1].exp)) ; }
+    { (yyval.var) = new absyn::SubscriptVar(EM_tokPos, (yyvsp[-3].var), (yyvsp[-1].exp)); }
 #line 1885 "y.tab.c" /* yacc.c:1646  */
     break;
 
