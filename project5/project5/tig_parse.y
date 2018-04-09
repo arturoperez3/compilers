@@ -218,7 +218,7 @@ list:      exp { $$ = new absyn::ExpList($1, nullptr) ;  }
 seq:       exp SEMICOLON list { $$ = new absyn::SeqExp(EM_tokPos, new absyn::ExpList($1, $3)) ; }
 
 reclist:   /*epsilon*/   { $$ = nullptr ; }
-       |   reclist2      { $$ = new absyn::EFieldList(nullptr, $1) ; }
+       |   reclist2      { $$ = $1 ; }
               
 
 reclist2:    ID EQ exp   { $$ = new absyn::EFieldList(new absyn::EField(S_Symbol($1), $3), nullptr) ; }
@@ -232,7 +232,7 @@ arglist2:   exp { $$ = new absyn::ExpList($1, nullptr) ; }
 
 lvalue:   ID {$$ = new absyn::SimpleVar(EM_tokPos,S_Symbol($1)) ; }
       |   lvalue DOT ID { $$ = new absyn::FieldVar(EM_tokPos, $1, S_Symbol($3)) ; }
-      |   lvalue LBRACK exp RBRACK { $$ = new absyn::SubscriptVar(EM_tokPos, new absyn::SimpleVar(EM_tokPos, really_typename($1)), $3) ; }
+      |   lvalue LBRACK exp RBRACK { $$ = new absyn::SubscriptVar(EM_tokPos, $1, $3); }
 %%
 
 /* this section is for user defined subroutines */
