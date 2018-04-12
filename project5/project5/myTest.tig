@@ -3,14 +3,16 @@ let
 	type bb = int
 	type cc = int
 	type d = int
-	var arr1:bb := bb [10] of 0 
-
-
-	/* type i = int
+	var arr1 := aa [10] of 0 
+	type i = int
 	type s = string
 	var b:i := 5
-	var c:i := 6 */
+	var c:i := 6 
+
+	type intlist = {hd:int, bg:int}
+	type empty = {}
+	var list:intlist := intlist {hd=0, bg =0}
 
 in 
-	
+	b := c; arr1[1] := 5; list.hd
 end

@@ -110,19 +110,34 @@ absyn::ArrayExp::~ArrayExp() {
 
 Ty_ty absyn::ArrayExp::typeCheck(v_tbl venv, t_tbl tenv) const {
     S_symbol s = this->getType();
-    Ty_ty t = T_tbl_look(tenv, s);
-    if (t == nullptr) {
-        EM_error(this->getPos(), "Type has not been declared in this scope");
-        return Ty_Error();
-    }
-    t = actualTy(t);
+    Ty_ty type = T_tbl_look(tenv, s);
+    Ty_ty size = this->getSize()->typeCheck(venv, tenv);
+    Ty_ty init = this->getInit()->typeCheck(venv, tenv);
 
-    // this is wrong, we should be throwing error if type is not an array type
-    if (t->kind != Ty_array) {
-        EM_error(this->getPos(), "Type is not array type");
+    if (type == nullptr) {
+        EM_error(this->getPos(), "Undeclared type: %s.", S_name(s));
         return Ty_Error();
     }
-    return t;
+
+    type = actualTy(type);
+
+    if (type->kind != Ty_array) {
+        EM_error(this->getPos(), "%s is not array type.", S_name(s));
+        return Ty_Error();
+    } 
+
+    if (!matchTypes(size, Ty_Int())) {
+        EM_error(this->getPos(), "Array size specifier must be of type int.");
+        return Ty_Error();
+    } 
+
+    init = actualTy(init);
+    if (!matchTypes(type->u.array, init)) {
+        EM_error(this->getPos(), "Array initialization expression is not of correct type.");
+        return Ty_Error();
+    }
+
+    return type;
 }
 
 void absyn::ArrayExp::print(FILE *out, int d) {
@@ -544,7 +559,7 @@ S_symbol absyn::NameTy::getName(void) const { return name; }
 absyn::NameTy::~NameTy() {}
 
 Ty_ty absyn::NameTy::typeCheck(t_tbl tenv) const {
-    return T_tbl_look(tenv, this->getName());
+    return Ty_Name(this->getName(), T_tbl_look(tenv, this->getName()));
 }
 
 void absyn::NameTy::print(FILE *out, int d) {
@@ -561,8 +576,28 @@ absyn::FieldList *absyn::RecordTy::getRecord(void) const { return record; }
 absyn::RecordTy::~RecordTy() { delete record; }
 
 Ty_ty absyn::RecordTy::typeCheck(t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of RecordTy is not yet implemented");
-    return Ty_Error();
+    Field* rec;
+    Ty_fieldList rectylist;
+    Ty_ty ty; 
+    FieldList* reclist = this->getRecord();
+
+    if (reclist == nullptr) {
+        EM_error(this->getPos(), "WARNING: empty record.");
+        return Ty_Error();
+    }
+
+    for (reclist; reclist && ty != Ty_Error(); reclist = reclist->getRest()) {
+        rec = reclist->getHead();
+        ty = T_tbl_look(tenv, rec->getType());
+        if (ty != nullptr) {
+            rectylist = Ty_FieldList(Ty_Field(rec->getName(), ty), rectylist);
+
+        } else {
+            EM_error(this->getPos(), "Unknown record type in declaration: %s", S_name(rec->getType()));
+            return Ty_Error();
+        }
+    }
+    return Ty_Record(rectylist);
 }
 
 void absyn::RecordTy::print(FILE *out, int d) {
@@ -745,8 +780,23 @@ S_symbol absyn::FieldVar::getSymbol(void) const { return sym; }
 absyn::FieldVar::~FieldVar() { delete var; }
 
 Ty_ty absyn::FieldVar::typeCheck(v_tbl venv, t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of FieldVar is not yet implemented");
-    return Ty_Error();
+
+   Ty_ty variable = this->getVar()->typeCheck(venv, tenv);
+
+   if (variable->kind != Ty_record) {
+       EM_error(this->getPos(), "Invalid attempt to access a non-record variable as a record.");
+       return Ty_Error();
+   }
+
+   E_enventry e = V_tbl_look(venv, this->getSymbol());
+   Ty_ty symbol = e->u.var.ty; 
+   if (symbol == nullptr) {
+       EM_error(this->getPos(), "Field not defined for given record type.");
+       return Ty_Error();
+   }
+
+   return symbol;
+
 }
 
 void absyn::FieldVar::print(FILE *out, int d) {
@@ -790,8 +840,27 @@ absyn::SubscriptVar::~SubscriptVar() {
 }
 
 Ty_ty absyn::SubscriptVar::typeCheck(v_tbl venv, t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of SubscriptVar is not yet implemented");
-    return Ty_Error();
+    Ty_ty var = this->getVar()->typeCheck(venv, tenv);
+    Ty_ty ex = this->getExp()->typeCheck(venv, tenv);
+
+    if (var->kind != Ty_array) {
+        EM_error(this->getPos(), "Variable being indexed into is not of array type.");
+        return Ty_Error();
+    }
+
+    if (!matchTypes(ex, Ty_Int())) {
+        EM_error(this->getPos(), "Indexing expression is not of type int.");
+        return Ty_Error();
+    }
+
+    var = actualTy(var);
+
+    if (!matchTypes(var->u.array, Ty_Int())) {
+        printf("not type int");
+    }
+
+    return var->u.array;
+
 }
 
 void absyn::SubscriptVar::print(FILE *out, int d) {
@@ -918,7 +987,7 @@ void absyn::VarDec::typeCheck(v_tbl venv, t_tbl tenv) const {
         }
     }
 
-    if (matchTypes(init, tt)) {
+    if (!matchTypes(init, tt)) {
         EM_error(this->getPos(), "Type of LHS does not match type of RHS");
         return;
     }
@@ -1153,8 +1222,19 @@ absyn::EFieldList *absyn::RecordExp::getFields(void) const { return fields; }
 absyn::RecordExp::~RecordExp() { delete fields; }
 
 Ty_ty absyn::RecordExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of RecordExp is not yet implemented");
-    return Ty_Error();
+    Ty_ty type = T_tbl_look(tent, this->getType());
+    
+    if (type == nullptr) {
+        EM_error(this->getPos(), "Undeclared type: %s.", S_name(this->getType()));
+        return Ty_Error();
+    }
+
+    if (type->kind != Ty_record) {
+        EM_error(this->getPos(), "Type is not of record type.")
+        return Ty_Error();
+    }
+
+
 }
 
 void absyn::RecordExp::print(FILE *out, int d) {
