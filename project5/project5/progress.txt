@@ -1,26 +1,26 @@
-Arrayexp - I think is right 
-ArrayTy - I think is right
-AssignExp - I think this is right
-BreakExp - not yet implemented 
-IfExp - I think is right 
-IntExp - I think is right 
-LetExp - I think is right 
-NameTy - I think is right 
-RecordTy - START HERE -----------------------------
-NilExp - I think is right 
-OpExp - still needs work (try more test cases)
-SeqExp - I think is right
-SimpleVar - I think is right 
-FieldVar - not yet implemented 
-StringExp - I think is right 
-SubscriptVar - not yet implemented 
+Arrayexp - Done
+ArrayTy - Done
+AssignExp - Done
+BreakExp - Done
+IfExp - Done
+IntExp - Done
+LetExp - Done
+NameTy - Done
+RecordTy - Done 
+NilExp - Done
+OpExp - Done
+SeqExp - Done
+SimpleVar - Done
+FieldVar - needs work 
+StringExp - Done
+SubscriptVar - Done
 FunctionDec - not yet implemented 
-TypeDec - I think is right 
-VarDec - I think is right (Mateus helped me implement)
-VarExp - I think is right 
-WhileExp - not yet implemented 
-CallExp - Roth implemented 
-ForExp - not yet implemented 
-RecordExp - not yet implemented 
+TypeDec - Done
+VarDec - Done
+VarExp - Done
+WhileExp - Done 
+CallExp - Done
+ForExp - Done
+RecordExp - Done
 
-Not yet implemented: 8
+Not yet implemented: 2

@@ -8,11 +8,33 @@ let
 	type s = string
 	var b:i := 5
 	var c:i := 6 
+	/* var wrong:int := "wrong" */
+	/* var wrong2 := nil */
+	/* var wrong3:int := nil */
+
+
 
 	type intlist = {hd:int, bg:int}
-	type empty = {}
-	var list:intlist := intlist {hd=0, bg =0}
+	type longerlist = {hd: int, bg:int, hj:int, jk:int}
+	/* type empty = {} */ 
+	var n:intlist := nil
+	var list:intlist := intlist {hd=0, bg=0}
 
+	var noType := "no type"
+	var noType2 := 42
+
+	/* 
+	type nul2 = {ty:int, ty2:string, ty3:id2}
+	var nil3 : nul2 : = nil
+	*/
 in 
-	b := c; arr1[1] := 5; list.hd
+	b := c; 
+	/* arr1[1] := 5; */
+	list.hd := 1; 
+	/* b := noType2; */ 
+	break; 
+	(for i:=0 to 100 do if b=50 then break else (b:=b+1;()));
+	break;
+	(while b < 50 do b:=b+1)
+
 end

@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <stdio.h>
 #include <iostream>
+#include <set>
 #include "util.h"
 #include "typecheck.h"
 #include "errormsg.h"
@@ -189,8 +190,11 @@ absyn::AssignExp::~AssignExp() {
 Ty_ty absyn::AssignExp::typeCheck(v_tbl venv, t_tbl tenv) const {
     if (!matchTypes(this->getVar()->typeCheck(venv, tenv), this->getExp()->typeCheck(venv, tenv))) {
         EM_error(this->getPos(), "Assignment statement type mismatch.");
+        return Ty_Error();
     }
-    return this->getExp()->typeCheck(venv, tenv);
+
+    // E_enventry isInduc = V_tbl_look(venv, this->getVar());
+    return Ty_Void();
 }
 
 void absyn::AssignExp::print(FILE *out, int d) {
@@ -209,8 +213,12 @@ absyn::BreakExp::BreakExp(int line) : Exp(line) {}
 absyn::BreakExp::~BreakExp() {}
 
 Ty_ty absyn::BreakExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of BreakExp is not yet implemented");
-    return Ty_Error();
+    if (inLoop) {
+        return Ty_Void();
+    } else {
+        EM_error(this->getPos(), "Break not inside a for or while loop.");
+        return Ty_Error();
+    }
 }
 
 void absyn::BreakExp::print(FILE *out, int d) {
@@ -468,7 +476,12 @@ Ty_ty absyn::IfExp::typeCheck(v_tbl venv, t_tbl tenv) const {
         EM_error(this->getPos(), "Test clause needs to be of type int.");
         return Ty_Error();
     }
-    if (!matchTypes(this->getElse()->typeCheck(venv, tenv), Ty_Error())) {
+
+    if (matchTypes(this->getElse()->typeCheck(venv, tenv), Ty_Int())) {
+        printf("TY INT");
+    }
+
+    if (this->getElse() != nullptr) {
         if (!matchTypes(this->getThen()->typeCheck(venv, tenv), this->getElse()->typeCheck(venv, tenv))) {
             EM_error(this->getPos(), "Then and Else clauses need to be of the same type.");
             return Ty_Error();
@@ -576,26 +589,38 @@ absyn::FieldList *absyn::RecordTy::getRecord(void) const { return record; }
 absyn::RecordTy::~RecordTy() { delete record; }
 
 Ty_ty absyn::RecordTy::typeCheck(t_tbl tenv) const {
+
     Field* rec;
-    Ty_fieldList rectylist;
+    Ty_fieldList rectylist = nullptr;
     Ty_ty ty; 
     FieldList* reclist = this->getRecord();
+
+
 
     if (reclist == nullptr) {
         EM_error(this->getPos(), "WARNING: empty record.");
         return Ty_Error();
     }
 
-    for (reclist; reclist && ty != Ty_Error(); reclist = reclist->getRest()) {
+    std::set<appel_string> mySet;
+    std::set<appel_string>::iterator it;
+    for (reclist; reclist != nullptr && ty != Ty_Error(); reclist = reclist->getRest()) {
         rec = reclist->getHead();
         ty = T_tbl_look(tenv, rec->getType());
         if (ty != nullptr) {
             rectylist = Ty_FieldList(Ty_Field(rec->getName(), ty), rectylist);
-
         } else {
             EM_error(this->getPos(), "Unknown record type in declaration: %s", S_name(rec->getType()));
             return Ty_Error();
         }
+
+        for (it = mySet.begin(); it != mySet.end(); ++it) {
+            if (*it == S_name(rec->getName())) {
+                EM_error(this->getPos(), "Duplicate field name (%s) in record declaration.", S_name(rec->getName()));
+                return Ty_Error();
+            }
+        }
+        mySet.insert(it, S_name(rec->getName()));
     }
     return Ty_Record(rectylist);
 }
@@ -686,6 +711,7 @@ Ty_ty absyn::OpExp::typeCheck(v_tbl venv, t_tbl tenv) const {
             EM_error(this->getPos(), "Cannot use equality operator on operands of different types");
             return Ty_Error();
         }
+        return Ty_Int();
     } 
     return Ty_Error(); 
 }
@@ -711,8 +737,9 @@ absyn::ExpList *absyn::SeqExp::getSeq(void) const { return seq; }
 absyn::SeqExp::~SeqExp() { delete seq; }
 
 Ty_ty absyn::SeqExp::typeCheck(v_tbl venv, t_tbl tenv) const {
+
     ExpList* e;
-    Ty_ty t;
+    Ty_ty t = Ty_Void();
     for (e = this -> getSeq(); e != nullptr; e = e -> getRest()) { 
         t = e -> getHead() -> typeCheck(venv, tenv);
     }
@@ -781,23 +808,25 @@ absyn::FieldVar::~FieldVar() { delete var; }
 
 Ty_ty absyn::FieldVar::typeCheck(v_tbl venv, t_tbl tenv) const {
 
-   Ty_ty variable = this->getVar()->typeCheck(venv, tenv);
+//     printf("FieldVar");
 
-   if (variable->kind != Ty_record) {
-       EM_error(this->getPos(), "Invalid attempt to access a non-record variable as a record.");
-       return Ty_Error();
-   }
+//    Ty_ty variable = this->getVar()->typeCheck(venv, tenv);
 
-   E_enventry e = V_tbl_look(venv, this->getSymbol());
-   Ty_ty symbol = e->u.var.ty; 
-   if (symbol == nullptr) {
-       EM_error(this->getPos(), "Field not defined for given record type.");
-       return Ty_Error();
-   }
+//    if (variable->kind != Ty_record) {
+//        EM_error(this->getPos(), "Invalid attempt to access a non-record variable as a record.");
+//        return Ty_Error();
+//    }
 
-   return symbol;
+//    E_enventry e = V_tbl_look(venv, this->getSymbol());
+//    Ty_ty symbol = e->u.var.ty; 
+//    if (symbol == nullptr) {
+//        EM_error(this->getPos(), "Field not defined for given record type.");
+//        return Ty_Error();
+//    }
 
-}
+//    return symbol;
+
+ }
 
 void absyn::FieldVar::print(FILE *out, int d) {
     indent(out, d);
@@ -840,6 +869,8 @@ absyn::SubscriptVar::~SubscriptVar() {
 }
 
 Ty_ty absyn::SubscriptVar::typeCheck(v_tbl venv, t_tbl tenv) const {
+
+    printf("subscript var ");
     Ty_ty var = this->getVar()->typeCheck(venv, tenv);
     Ty_ty ex = this->getExp()->typeCheck(venv, tenv);
 
@@ -943,22 +974,13 @@ absyn::VarDec::~VarDec() { delete init; }
 
 void absyn::VarDec::typeCheck(v_tbl venv, t_tbl tenv) const {
     // EM_error(this->getPos(), "Type checking of VarDec is not yet implemented");
-    // printf("VarDec ");
     Ty_ty init =  this->getInit()->typeCheck(venv, tenv);
     init = actualTy(init); 
-    if (matchTypes(init, Ty_Nil())) {
-        EM_error(this->getPos(), "Type of RHS cannot be nil");
-        return;
-    }
-    if (matchTypes(init, Ty_Void())) {
-        EM_error(this->getPos(), "Type of RHS cannot be void");
-        return;
-    }
 
     S_symbol t = this -> getType();
     if (t == nullptr ) {
-        if (matchTypes(init, Ty_Nil())) {
-            EM_error(this->getPos(), "Type of RHS cannot be nil"); //change this slightly
+        if (init->kind == Ty_nil) {
+            EM_error(this->getPos(), "Variable initialization to NIL requires a type specifier.");
         } else {
             V_tbl_enter(venv, this->getVar() , E_VarEntry(init));
         }
@@ -968,27 +990,29 @@ void absyn::VarDec::typeCheck(v_tbl venv, t_tbl tenv) const {
         // if its not nil, then insert into vtable
     } 
 
+
     Ty_ty tt = T_tbl_look(tenv, t);
 
     // now check if look up succeed ( not nullptr )
 
     if (tt == nullptr) {
         // report error, return
-        EM_error(this->getPos(), "Type %s has not been declared", S_name(t));
+        EM_error(this->getPos(), "Type %s has not been declared.", S_name(t));
         return;
     }
 
     tt = actualTy(tt);
-
-    if (matchTypes(init, Ty_Nil())) {
-        if (tt->kind != Ty_record) {
-            EM_error(this->getPos(), "Type of RHS is nil but actual type of LHS is not Record");
-            return;
-        }
+    if (matchTypes(init, Ty_Nil()) && tt->kind != Ty_record) {
+        EM_error(this->getPos(), "Variable initialization to NIL requires a record type.");
+        return;
+    }
+    if (matchTypes(init, Ty_Void())) {
+        EM_error(this->getPos(), "Type of RHS cannot be void.");
+        return;
     }
 
     if (!matchTypes(init, tt)) {
-        EM_error(this->getPos(), "Type of LHS does not match type of RHS");
+        EM_error(this->getPos(), "Type of LHS does not match type of RHS.");
         return;
     }
 
@@ -1042,8 +1066,22 @@ absyn::WhileExp::~WhileExp() {
 }
 
 Ty_ty absyn::WhileExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of WhileExp is not yet implemented");
-    return Ty_Error();
+
+    inLoop = true;
+
+    if (!matchTypes(this->getTest()->typeCheck(venv, tenv), Ty_Int())) {
+        EM_error(this->getPos(), "Lo expression in for loop must be of type int.");
+        return Ty_Error();
+    }
+
+    if (!matchTypes(this->getBody()->typeCheck(venv,tenv), Ty_Void())) {
+        EM_error(this->getPos(), "Body of for loop must be of type void.");
+        return Ty_Error();
+    }
+
+    inLoop = false;
+
+    return Ty_Void();
 }
 
 void absyn::WhileExp::print(FILE *out, int d) {
@@ -1146,8 +1184,32 @@ absyn::ForExp::~ForExp() {
 }
 
 Ty_ty absyn::ForExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of ForExp is not yet implemented");
-    return Ty_Error();
+
+    inLoop = true;
+    S_symbol var = this->getVar();
+    E_enventry inducVar = E_VarEntry(Ty_Int());
+    inducVar->u.var.isFLIV = true;
+    V_tbl_enter(venv, var, inducVar);
+
+    if (!matchTypes(this->getLo()->typeCheck(venv, tenv), Ty_Int())) {
+        EM_error(this->getPos(), "Lo expression in for loop must be of type int.");
+        return Ty_Error();
+    }
+
+    if (!matchTypes(this->getHi()->typeCheck(venv, tenv), Ty_Int())) {
+        EM_error(this->getPos(), "Hi expression in for loop must be of type int.");
+        return Ty_Error();
+    }
+
+    if (!matchTypes(this->getBody()->typeCheck(venv,tenv), Ty_Void())) {
+        EM_error(this->getPos(), "Body of for loop must be of type void.");
+        return Ty_Error();
+    }
+
+    inLoop = false;
+
+    return Ty_Void();
+
 }
 
 void absyn::ForExp::print(FILE *out, int d) {
@@ -1222,18 +1284,80 @@ absyn::EFieldList *absyn::RecordExp::getFields(void) const { return fields; }
 absyn::RecordExp::~RecordExp() { delete fields; }
 
 Ty_ty absyn::RecordExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    Ty_ty type = T_tbl_look(tent, this->getType());
-    
-    if (type == nullptr) {
-        EM_error(this->getPos(), "Undeclared type: %s.", S_name(this->getType()));
+    // Ty_ty recType = T_tbl_look(tenv, this->getType());
+    // using a while loop, check both lists are of same length
+    // if not of same length, return error
+    // check both lists have the same parameters, and in the same order 
+
+    Ty_ty recType = T_tbl_look(tenv, this->getType());
+
+    // check type exists 
+    if (recType == nullptr) {
+        EM_error(this->getPos(), "Undeclared type: %s", S_name(this->getType()));
         return Ty_Error();
     }
 
-    if (type->kind != Ty_record) {
-        EM_error(this->getPos(), "Type is not of record type.")
+    // check type is a Record Type
+    if (recType->kind != Ty_record) {
+        EM_error(this->getPos(), "%s is not a record type. Invalid Reference.", S_name(this->getType()));
         return Ty_Error();
     }
 
+    Ty_fieldList types = Ty_FieldList(recType->u.record->head, recType->u.record->tail);
+    EFieldList* fields = this -> getFields();
+
+    // check that lengths are equivalent in type declaration and record declaration 
+    while (types != nullptr && fields != nullptr) {
+        types = types->tail;
+        fields = fields->getRest();
+    }
+
+    // check that lengths are equivalent in type declaration and record declaration 
+    if (types != nullptr || fields != nullptr) {
+        EM_error(this->getPos(), "Invalid record creation. Incorrect number of fields specified for "
+        "record %s.", S_name(this->getType()));
+        return Ty_Error();
+    }
+
+    // tyfields have both s_symbol and tyty
+    // EField has both s_symbol and exp (so call typecheck to get type)
+
+    Ty_fieldList reversedTypes = Ty_FieldList(recType->u.record->head, recType->u.record->tail);
+    fields = this -> getFields();
+    Ty_field type;
+    EField* field; 
+
+    // reverse the types list 
+    while (reversedTypes != nullptr) {
+        type = reversedTypes->head;
+        types = Ty_FieldList(type, types);
+        reversedTypes = reversedTypes->tail;
+    }
+
+    // check that both have same fields and same types 
+    while (types != nullptr && fields != nullptr) {
+        type = types->head;
+        field = fields->getHead();
+
+
+        if (S_name(type->name) != S_name(field->getName())) {
+            EM_error(this->getPos(), "Invalid record creation. Field '%s' encountered where "
+            "'%s' was expected.", S_name(field->getName()), S_name(type->name));
+            return Ty_Error();
+        }
+
+        if (!matchTypes(type->ty, field->getExp()->typeCheck(venv, tenv))) {
+            EM_error(this->getPos(), "Invalid record creation. Type mismatch for field %s.", S_name(type->name));
+            return Ty_Error();
+        }
+
+
+        types = types->tail;
+        fields = fields->getRest();
+    }
+
+
+    return recType;
 
 }
 
