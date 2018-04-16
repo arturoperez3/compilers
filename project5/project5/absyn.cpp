@@ -676,10 +676,8 @@ absyn::OpExp::~OpExp() {
 }
 
 Ty_ty absyn::OpExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    // EM_error(this->getPos(), "Type checking of OpExp is not yet implemented");
-    // return Ty_Error();
 
-
+    // check operands that require Ty_Int() on both sides 
     absyn::OpExp::OpType oper = this->getOper();
     if (oper == absyn::OpExp::EXP_PLUS || oper == absyn::OpExp::EXP_MINUS
     || oper == absyn::OpExp::EXP_MUL || oper == absyn::OpExp::EXP_DIV) {
@@ -692,8 +690,8 @@ Ty_ty absyn::OpExp::typeCheck(v_tbl venv, t_tbl tenv) const {
              "is not of type int.");
              return Ty_Error();
          }
-         return Ty_Int();
     } 
+    // check operands that require Ty_Int() or Ty_String() on both sides 
     else if (oper == absyn::OpExp::EXP_GT || oper == absyn::OpExp::EXP_GE
     || oper == absyn::OpExp::EXP_LT || oper == absyn::OpExp::EXP_LE) {
          if (!matchTypes(this->getLeft()->typeCheck(venv, tenv), Ty_Int()) && 
@@ -710,15 +708,14 @@ Ty_ty absyn::OpExp::typeCheck(v_tbl venv, t_tbl tenv) const {
             EM_error(this->getPos(), "Cannot use comparison operator on operands of different types.");
             return Ty_Error();
         }
-         return Ty_Int();
+        // check operands that require only the same type on both sides
     } else {
         if (!matchTypes(this->getLeft()->typeCheck(venv, tenv), this->getRight()->typeCheck(venv, tenv))) {
             EM_error(this->getPos(), "Cannot use equality operator on operands of different types.");
             return Ty_Error();
         }
-        return Ty_Int();
     } 
-    return Ty_Error(); 
+    return Ty_Int(); 
 }
 
 void absyn::OpExp::print(FILE *out, int d) {
@@ -1011,7 +1008,11 @@ absyn::TypeDec::~TypeDec() { delete type; }
 void absyn::TypeDec::typeCheck(v_tbl venv, t_tbl tenv) const {
     NametyList* t;
     for (t = this -> getType(); t != nullptr; t = t -> getRest()) { 
-        T_tbl_enter(tenv, t->getHead()->getName(), t->getHead()->getType()->typeCheck(tenv));
+        if (T_tbl_look(tenv, t->getHead()->getName()) == nullptr) {
+            T_tbl_enter(tenv, t->getHead()->getName(), t->getHead()->getType()->typeCheck(tenv));
+        } else {
+            EM_error(this->getPos(), "Duplicate type name (%s)", S_name(t->getHead()->getName()));
+        }
     }
 }
 
@@ -1045,35 +1046,36 @@ bool absyn::VarDec::getEscape(void) const { return escape; }
 absyn::VarDec::~VarDec() { delete init; }
 
 void absyn::VarDec::typeCheck(v_tbl venv, t_tbl tenv) const {
-    // EM_error(this->getPos(), "Type checking of VarDec is not yet implemented");
     Ty_ty init =  this->getInit()->typeCheck(venv, tenv);
     init = actualTy(init); 
 
     S_symbol t = this -> getType();
+
+    // if variable was not given an intializing type, make sure RHS is not nil nor void
     if (t == nullptr ) {
         if (init->kind == Ty_nil) {
             EM_error(this->getPos(), "Variable initialization to NIL requires a type specifier.");
+        } else if (init->kind == Ty_void) {
+            EM_error(this->getPos(), "Variable initialization cannot be of type Void.");
         } else {
             V_tbl_enter(venv, this->getVar() , E_VarEntry(init));
         }
         return;
-        // check to be not nil 
-        // if it is nil, abort
-        // if its not nil, then insert into vtable
     } 
 
-
+    // look up type of intializing type
     Ty_ty tt = T_tbl_look(tenv, t);
 
-    // now check if look up succeed ( not nullptr )
-
+    // make sure it is a valid type
     if (tt == nullptr) {
-        // report error, return
         EM_error(this->getPos(), "Type %s has not been declared.", S_name(t));
         return;
     }
 
+    // get the root type
     tt = actualTy(tt);
+
+    // do some sanity checking
     if (matchTypes(init, Ty_Nil()) && tt->kind != Ty_record) {
         EM_error(this->getPos(), "Variable initialization to NIL requires a record type.");
         return;
@@ -1088,6 +1090,7 @@ void absyn::VarDec::typeCheck(v_tbl venv, t_tbl tenv) const {
         return;
     }
 
+    // if we got here, we have a valid variable declaration, so we enter it into the venv
     V_tbl_enter(venv, this->getVar() , E_VarEntry(tt));
 }
 
