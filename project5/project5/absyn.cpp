@@ -472,15 +472,14 @@ absyn::IfExp::~IfExp() {
 }
 
 Ty_ty absyn::IfExp::typeCheck(v_tbl venv, t_tbl tenv) const {
+
+    // check Test clause is Ty_Int()
     if (!matchTypes(this->getTest()->typeCheck(venv, tenv), Ty_Int())) {
         EM_error(this->getPos(), "Test clause needs to be of type int.");
         return Ty_Error();
     }
 
-    if (matchTypes(this->getElse()->typeCheck(venv, tenv), Ty_Int())) {
-        printf("TY INT");
-    }
-
+    // if there is an Else clause, then Then and Else clauses need to be of the same type
     if (this->getElse() != nullptr) {
         if (!matchTypes(this->getThen()->typeCheck(venv, tenv), this->getElse()->typeCheck(venv, tenv))) {
             EM_error(this->getPos(), "Then and Else clauses need to be of the same type.");
@@ -489,8 +488,9 @@ Ty_ty absyn::IfExp::typeCheck(v_tbl venv, t_tbl tenv) const {
         return this->getThen()->typeCheck(venv, tenv);
     }
 
+    // if no Else clause, then Then clause must produce no value
     if (!matchTypes(this->getThen()->typeCheck(venv, tenv), Ty_Void())) {
-        EM_error(this->getPos(), "Then clause must be type void");
+        EM_error(this->getPos(), "Then clause must be type void.");
     }
     return Ty_Void();
 }
@@ -595,8 +595,7 @@ Ty_ty absyn::RecordTy::typeCheck(t_tbl tenv) const {
     Ty_ty ty; 
     FieldList* reclist = this->getRecord();
 
-
-
+    // handle empty record 
     if (reclist == nullptr) {
         EM_error(this->getPos(), "WARNING: empty record.");
         return Ty_Error();
@@ -606,6 +605,8 @@ Ty_ty absyn::RecordTy::typeCheck(t_tbl tenv) const {
     std::set<appel_string>::iterator it;
     for (reclist; reclist != nullptr && ty != Ty_Error(); reclist = reclist->getRest()) {
         rec = reclist->getHead();
+
+        // check types inside record are valid
         ty = T_tbl_look(tenv, rec->getType());
         if (ty != nullptr) {
             rectylist = Ty_FieldList(Ty_Field(rec->getName(), ty), rectylist);
@@ -614,6 +615,7 @@ Ty_ty absyn::RecordTy::typeCheck(t_tbl tenv) const {
             return Ty_Error();
         }
 
+        // check that parameters within record are unique
         for (it = mySet.begin(); it != mySet.end(); ++it) {
             if (*it == S_name(rec->getName())) {
                 EM_error(this->getPos(), "Duplicate field name (%s) in record declaration.", S_name(rec->getName()));
@@ -683,11 +685,11 @@ Ty_ty absyn::OpExp::typeCheck(v_tbl venv, t_tbl tenv) const {
     || oper == absyn::OpExp::EXP_MUL || oper == absyn::OpExp::EXP_DIV) {
          if (!matchTypes(this->getLeft()->typeCheck(venv, tenv), Ty_Int())) {
              EM_error(this->getPos(), "Cannot use arithmetic operator where left operand "
-             "is not of type int");
+             "is not of type int.");
              return Ty_Error();
          } if (!matchTypes(this->getRight()->typeCheck(venv, tenv), Ty_Int())) {
              EM_error(this->getPos(), "Cannot use arithmetic operator where right operand "
-             "is not of type int");
+             "is not of type int.");
              return Ty_Error();
          }
          return Ty_Int();
@@ -697,18 +699,21 @@ Ty_ty absyn::OpExp::typeCheck(v_tbl venv, t_tbl tenv) const {
          if (!matchTypes(this->getLeft()->typeCheck(venv, tenv), Ty_Int()) && 
             !matchTypes(this->getLeft()->typeCheck(venv, tenv), Ty_String())) {
              EM_error(this->getPos(), "Cannot use relational operator where left operand is not "
-             "of type int or string");
+             "of type int or string.");
              return Ty_Error();
          } if (!matchTypes(this->getRight()->typeCheck(venv, tenv), Ty_Int()) && 
             !matchTypes(this->getRight()->typeCheck(venv, tenv), Ty_String())) {
              EM_error(this->getPos(), "Cannot use relational operator where right operand is not "
-             "of type int or string");
+             "of type int or string.");
              return Ty_Error();
-         }
+         } if (!matchTypes(this->getLeft()->typeCheck(venv, tenv), this->getRight()->typeCheck(venv, tenv))) {
+            EM_error(this->getPos(), "Cannot use comparison operator on operands of different types.");
+            return Ty_Error();
+        }
          return Ty_Int();
     } else {
         if (!matchTypes(this->getLeft()->typeCheck(venv, tenv), this->getRight()->typeCheck(venv, tenv))) {
-            EM_error(this->getPos(), "Cannot use equality operator on operands of different types");
+            EM_error(this->getPos(), "Cannot use equality operator on operands of different types.");
             return Ty_Error();
         }
         return Ty_Int();
@@ -770,11 +775,13 @@ absyn::SimpleVar::~SimpleVar() {}
 Ty_ty absyn::SimpleVar::typeCheck(v_tbl venv, t_tbl tenv) const {
     E_enventry v = V_tbl_look(venv, (this->getSymbol()));
 
+    // check variable has been declared
     if (v == NULL) {
         EM_error(this->getPos(), "Undeclared variable: %s", S_name(this->getSymbol()));
         return Ty_Error();
     }
 
+    // check variable has been declared a variable
     if (v->kind != E_varEntry) {
         EM_error(this->getPos(), "%s is not a variable.", S_name(this->getSymbol()));
         return Ty_Error();
@@ -782,10 +789,12 @@ Ty_ty absyn::SimpleVar::typeCheck(v_tbl venv, t_tbl tenv) const {
 
     Ty_ty t = v->u.var.ty;
 
+    // check variable has a type
     if (t == nullptr) {
         EM_error(this->getPos(), "%s is of undeclared type", S_name(this->getSymbol()));
         return Ty_Error();
     }
+
     return t;
 
 }
@@ -870,7 +879,6 @@ absyn::SubscriptVar::~SubscriptVar() {
 
 Ty_ty absyn::SubscriptVar::typeCheck(v_tbl venv, t_tbl tenv) const {
 
-    printf("subscript var ");
     Ty_ty var = this->getVar()->typeCheck(venv, tenv);
     Ty_ty ex = this->getExp()->typeCheck(venv, tenv);
 
@@ -912,8 +920,72 @@ absyn::FunDecList *absyn::FunctionDec::getFunction(void) const { return function
 
 absyn::FunctionDec::~FunctionDec() { delete function; }
 
+// fundec
+		// Ty_ty typeCheck(v_tbl venv, t_tbl tenv) const;
+		// S_symbol getName( void ) const;
+		// FieldList* getParams( void ) const;
+		// S_symbol getResult( void ) const;
+		// Exp* getBody( void ) const;
 void absyn::FunctionDec::typeCheck(v_tbl venv, t_tbl tenv) const {
-    EM_error(this->getPos(), "Type checking of FunctionDec is not yet implemented");
+    FunDecList* fundeclist = this->getFunction();
+    FunDec* fundec;
+
+    // iterate through all the functions
+    for (fundeclist; fundeclist != nullptr; fundeclist = fundeclist->getRest()) {
+
+        // start checking parameters of a function (params)
+        Env_beginScope(venv, tenv);
+        fundec = fundeclist->getHead();
+        FieldList* params = fundec->getParams();
+        Ty_tyList typesList = nullptr; 
+        std::set<appel_string> mySet;
+        std::set<appel_string>::iterator it;
+        for (params; params != nullptr; params = params->getRest()) {
+            Ty_ty paramType = T_tbl_look(tenv, params->getHead()->getType());
+            S_symbol paramName = params->getHead()->getName();
+
+            // check param is a valid type
+            if (paramType == nullptr) {
+                EM_error(this->getPos(), "Parameter %s is not a valid type.", S_name(params->getHead()->getType()));
+                return;
+            }
+
+            typesList = Ty_TyList(paramType, typesList);
+
+            // check param is unique in function declaration
+            for (it = mySet.begin(); it != mySet.end(); ++it) {
+                if (*it == S_name(paramName)) {
+                    EM_error(this->getPos(), "Duplicate field name (%s) in function declaration.", S_name(paramName));
+                    return;
+                }
+            }
+            // since param is unique, add to set so we can compare to later params in function declaration
+            mySet.insert(it, S_name(paramName)); 
+            // add to venv so param available within the function's scope
+            V_tbl_enter(venv, paramName, E_VarEntry(paramType));
+        }
+
+
+        // check if no return type given, then body must be of type void
+        if (fundec->getResult() == nullptr) {
+            if (!matchTypes(fundec->getBody()->typeCheck(venv, tenv), Ty_Void())) {
+                EM_error(this->getPos(), "The body must be of type void because %s has no return type.", 
+                S_name(fundec->getName()));
+                return;
+            }
+            // else if return type is given, check that return type and the type of the body do match
+        } else {
+            Ty_ty returnType = T_tbl_look(tenv, fundec->getResult());
+            if (!matchTypes(returnType, fundec->getBody()->typeCheck(venv, tenv))) {
+                EM_error(this->getPos(), "Type mismatch: return type and body type do not match for function %s.", 
+                S_name(fundec->getName()));
+                return;
+            }
+        }
+        Env_endScope(venv, tenv);
+        // if we get here, we have a valid function declaration, so go ahead and enter into value environment
+        V_tbl_enter(venv, fundec->getName(), E_FunEntry(typesList, T_tbl_look(tenv, fundec->getResult())));
+    }
 }
 
 void absyn::FunctionDec::print(FILE *out, int d) {
@@ -1075,7 +1147,7 @@ Ty_ty absyn::WhileExp::typeCheck(v_tbl venv, t_tbl tenv) const {
     }
 
     if (!matchTypes(this->getBody()->typeCheck(venv,tenv), Ty_Void())) {
-        EM_error(this->getPos(), "Body of for loop must be of type void.");
+        EM_error(this->getPos(), "Body of while loop must be of type void.");
         return Ty_Error();
     }
 
@@ -1192,12 +1264,12 @@ Ty_ty absyn::ForExp::typeCheck(v_tbl venv, t_tbl tenv) const {
     V_tbl_enter(venv, var, inducVar);
 
     if (!matchTypes(this->getLo()->typeCheck(venv, tenv), Ty_Int())) {
-        EM_error(this->getPos(), "Lo expression in for loop must be of type int.");
+        EM_error(this->getPos(), "Lower bound of FOR loop must be an integer expression.");
         return Ty_Error();
     }
 
     if (!matchTypes(this->getHi()->typeCheck(venv, tenv), Ty_Int())) {
-        EM_error(this->getPos(), "Hi expression in for loop must be of type int.");
+        EM_error(this->getPos(), "Upper bound of FOR loop must be an integer expression.");
         return Ty_Error();
     }
 

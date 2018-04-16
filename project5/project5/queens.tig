@@ -25,7 +25,7 @@ let
         do if row[r]=0 & diag1[r+c]=0 & diag2[r+7-c]=0
 	           then (row[r]:=1; diag1[r+c]:=1; diag2[r+7-c]:=1;
 		         col[c]:=r;
-	                 /* try(c+1); */
+	                 try(c+1);
 			 row[r]:=0; diag1[r+c]:=0; diag2[r+7-c]:=0)
 
 )

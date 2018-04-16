@@ -2,10 +2,12 @@
 let
 
 /* calculate n! */
-function nfactor(n: int): int =
+/* var n:int := 5 */ 
+type i = int
+function nfactor(n: i): int =
 		if  n = 0 
 			then 1
-			else n * nfactor(n-1)
+			else n /* * nfactor(n-1) */
 
 in
 	nfactor(10)

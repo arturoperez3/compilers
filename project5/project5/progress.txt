@@ -14,7 +14,7 @@ SimpleVar - Done
 FieldVar - needs work 
 StringExp - Done
 SubscriptVar - Done
-FunctionDec - not yet implemented 
+FunctionDec - Done
 TypeDec - Done
 VarDec - Done
 VarExp - Done
