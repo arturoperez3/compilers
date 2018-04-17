@@ -23,6 +23,12 @@ let
 	var noType := "no type"
 	var noType2 := 42
 
+	function foo (a:int) = 
+		a := a + 1
+
+	 function bar (g:int) = 
+		a := g + 2 
+
 	/* 
 	type nul2 = {ty:int, ty2:string, ty3:id2}
 	var nil3 : nul2 : = nil
@@ -30,11 +36,9 @@ let
 in 
 	b := c; 
 	/* arr1[1] := 5; */
-	list.hd := 1; 
+	list.bg := 1; 
 	/* b := noType2; */ 
-	break; 
 	(for i:=0 to 100 do if b=50 then break else (b:=b+1;()));
-	break;
 	(while b < 50 do b:=b+1)
 
 end

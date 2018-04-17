@@ -193,7 +193,16 @@ Ty_ty absyn::AssignExp::typeCheck(v_tbl venv, t_tbl tenv) const {
         return Ty_Error();
     }
 
-    // E_enventry isInduc = V_tbl_look(venv, this->getVar());
+    SimpleVar* isInduc = dynamic_cast<SimpleVar*>(this->getVar());
+
+    if (isInduc != nullptr) {
+        E_enventry v = V_tbl_look(venv, isInduc->getSymbol());
+        if (v->u.var.isFLIV == true) {
+            EM_error(this->getPos(), "Cannot assign to for loop induction variable %s", S_name(isInduc->getSymbol()));
+            return Ty_Error();
+        }
+    }
+
     return Ty_Void();
 }
 
@@ -213,6 +222,7 @@ absyn::BreakExp::BreakExp(int line) : Exp(line) {}
 absyn::BreakExp::~BreakExp() {}
 
 Ty_ty absyn::BreakExp::typeCheck(v_tbl venv, t_tbl tenv) const {
+    // break is only valid when we are inside of a loop construct
     if (inLoop) {
         return Ty_Void();
     } else {
@@ -813,25 +823,23 @@ S_symbol absyn::FieldVar::getSymbol(void) const { return sym; }
 absyn::FieldVar::~FieldVar() { delete var; }
 
 Ty_ty absyn::FieldVar::typeCheck(v_tbl venv, t_tbl tenv) const {
-
-//     printf("FieldVar");
-
-//    Ty_ty variable = this->getVar()->typeCheck(venv, tenv);
-
-//    if (variable->kind != Ty_record) {
-//        EM_error(this->getPos(), "Invalid attempt to access a non-record variable as a record.");
-//        return Ty_Error();
-//    }
-
-//    E_enventry e = V_tbl_look(venv, this->getSymbol());
-//    Ty_ty symbol = e->u.var.ty; 
-//    if (symbol == nullptr) {
-//        EM_error(this->getPos(), "Field not defined for given record type.");
-//        return Ty_Error();
-//    }
-
-//    return symbol;
-
+    Ty_ty var = this->getVar()->typeCheck(venv, tenv);
+    if (matchTypes(var, Ty_Error())) {
+        return Ty_Error();
+    } else if (var->kind != Ty_record) {
+        EM_error(this->getPos(), "Attempt to access a non-record variable as a record.");
+        return Ty_Error();
+    } else {
+        Ty_fieldList fields = var->u.record;
+        while (fields != nullptr) {
+            if (S_name(fields->head->name) == S_name(this->getSymbol())) {
+                return fields->head->ty;
+            }
+            fields = fields->tail;
+        }
+        EM_error(this->getPos(), "Field not defined for given record type.");
+        return Ty_Error();
+    }
  }
 
 void absyn::FieldVar::print(FILE *out, int d) {
@@ -891,10 +899,6 @@ Ty_ty absyn::SubscriptVar::typeCheck(v_tbl venv, t_tbl tenv) const {
 
     var = actualTy(var);
 
-    if (!matchTypes(var->u.array, Ty_Int())) {
-        printf("not type int");
-    }
-
     return var->u.array;
 
 }
@@ -917,26 +921,21 @@ absyn::FunDecList *absyn::FunctionDec::getFunction(void) const { return function
 
 absyn::FunctionDec::~FunctionDec() { delete function; }
 
-// fundec
-		// Ty_ty typeCheck(v_tbl venv, t_tbl tenv) const;
-		// S_symbol getName( void ) const;
-		// FieldList* getParams( void ) const;
-		// S_symbol getResult( void ) const;
-		// Exp* getBody( void ) const;
 void absyn::FunctionDec::typeCheck(v_tbl venv, t_tbl tenv) const {
     FunDecList* fundeclist = this->getFunction();
     FunDec* fundec;
 
     // iterate through all the functions
+    // for mutually recursive - 2 different for loops, one for headers and one for bodies 
     for (fundeclist; fundeclist != nullptr; fundeclist = fundeclist->getRest()) {
 
         // start checking parameters of a function (params)
-        Env_beginScope(venv, tenv);
         fundec = fundeclist->getHead();
         FieldList* params = fundec->getParams();
         Ty_tyList typesList = nullptr; 
         std::set<appel_string> mySet;
         std::set<appel_string>::iterator it;
+        Env_beginScope(venv, tenv);
         for (params; params != nullptr; params = params->getRest()) {
             Ty_ty paramType = T_tbl_look(tenv, params->getHead()->getType());
             S_symbol paramName = params->getHead()->getName();
@@ -964,7 +963,9 @@ void absyn::FunctionDec::typeCheck(v_tbl venv, t_tbl tenv) const {
 
 
         // check if no return type given, then body must be of type void
+        Ty_ty returnType;
         if (fundec->getResult() == nullptr) {
+            returnType = Ty_Void();
             if (!matchTypes(fundec->getBody()->typeCheck(venv, tenv), Ty_Void())) {
                 EM_error(this->getPos(), "The body must be of type void because %s has no return type.", 
                 S_name(fundec->getName()));
@@ -972,7 +973,7 @@ void absyn::FunctionDec::typeCheck(v_tbl venv, t_tbl tenv) const {
             }
             // else if return type is given, check that return type and the type of the body do match
         } else {
-            Ty_ty returnType = T_tbl_look(tenv, fundec->getResult());
+            returnType = T_tbl_look(tenv, fundec->getResult());
             if (!matchTypes(returnType, fundec->getBody()->typeCheck(venv, tenv))) {
                 EM_error(this->getPos(), "Type mismatch: return type and body type do not match for function %s.", 
                 S_name(fundec->getName()));
@@ -981,7 +982,7 @@ void absyn::FunctionDec::typeCheck(v_tbl venv, t_tbl tenv) const {
         }
         Env_endScope(venv, tenv);
         // if we get here, we have a valid function declaration, so go ahead and enter into value environment
-        V_tbl_enter(venv, fundec->getName(), E_FunEntry(typesList, T_tbl_look(tenv, fundec->getResult())));
+        V_tbl_enter(venv, fundec->getName(), E_FunEntry(typesList, returnType));
     }
 }
 
@@ -1261,6 +1262,9 @@ absyn::ForExp::~ForExp() {
 Ty_ty absyn::ForExp::typeCheck(v_tbl venv, t_tbl tenv) const {
 
     inLoop = true;
+
+    // begin for loop scope
+    Env_beginScope(venv, tenv);
     S_symbol var = this->getVar();
     E_enventry inducVar = E_VarEntry(Ty_Int());
     inducVar->u.var.isFLIV = true;
@@ -1280,6 +1284,9 @@ Ty_ty absyn::ForExp::typeCheck(v_tbl venv, t_tbl tenv) const {
         EM_error(this->getPos(), "Body of for loop must be of type void.");
         return Ty_Error();
     }
+
+    // end for loop scope 
+    Env_endScope(venv, tenv);
 
     inLoop = false;
 
