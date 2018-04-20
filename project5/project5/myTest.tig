@@ -3,6 +3,9 @@ let
 	type bb = int
 	type cc = int
 	type d = int
+	type e = f 
+	type f = int
+	type e = int
 	var arr1 := aa [10] of 0 
 	type i = int
 	type s = string
@@ -12,6 +15,11 @@ let
 	/* var wrong2 := nil */
 	/* var wrong3:int := nil */
 
+	/* circular definition stuff */ 
+
+	type tt = d
+	type hh = jj  
+	type jj = tt
 
 
 	type intlist = {hd:int, bg:int}
@@ -23,11 +31,14 @@ let
 	var noType := "no type"
 	var noType2 := 42
 
-	function foo (a:int) = 
-		a := a + 1
+	function foo (a:int) : st = 
+		(b := a + 1; 5)
 
-	 function bar (g:int) = 
-		a := g + 2 
+	function bar (g:int) = 
+		g := g + 2 
+
+	function kop (h:l, h:p) = 
+		h := h + 1
 
 	/* 
 	type nul2 = {ty:int, ty2:string, ty3:id2}
@@ -39,6 +50,7 @@ in
 	list.bg := 1; 
 	/* b := noType2; */ 
 	(for i:=0 to 100 do if b=50 then break else (b:=b+1;()));
-	(while b < 50 do b:=b+1)
+	(while b < 50 do b:=b+1);
+	bar(2)
 
 end

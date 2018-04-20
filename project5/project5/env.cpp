@@ -55,7 +55,8 @@ v_tbl E_base_venv()
   V_tbl_enter(it, S_Symbol("size"), E_FunEntry(Ty_TyList(Ty_String(), nullptr), Ty_Int()));
   V_tbl_enter(it, S_Symbol("substring"), E_FunEntry(Ty_TyList(Ty_String(), 
                                 Ty_TyList(Ty_Int(), Ty_TyList(Ty_Int(), nullptr))), Ty_String()));
-  V_tbl_enter(it, S_Symbol("concat"), E_FunEntry(Ty_TyList(Ty_String(), Ty_TyList(Ty_String(), nullptr)), Ty_String()));
+  V_tbl_enter(it, S_Symbol("concat"), E_FunEntry(Ty_TyList(Ty_String(), 
+                                Ty_TyList(Ty_String(), nullptr)), Ty_String()));
   V_tbl_enter(it, S_Symbol("not"), E_FunEntry(Ty_TyList(Ty_Int(), nullptr), Ty_Int()));
   V_tbl_enter(it, S_Symbol("exit"), E_FunEntry(Ty_TyList(Ty_Int(), nullptr), Ty_Void()));
   V_tbl_enter(it, S_Symbol("printint"), E_FunEntry(Ty_TyList(Ty_Int(), nullptr), Ty_Void()));

@@ -188,6 +188,7 @@ absyn::AssignExp::~AssignExp() {
 }
 
 Ty_ty absyn::AssignExp::typeCheck(v_tbl venv, t_tbl tenv) const {
+    // check LHS and RHS are same type
     if (!matchTypes(this->getVar()->typeCheck(venv, tenv), this->getExp()->typeCheck(venv, tenv))) {
         EM_error(this->getPos(), "Assignment statement type mismatch.");
         return Ty_Error();
@@ -195,6 +196,7 @@ Ty_ty absyn::AssignExp::typeCheck(v_tbl venv, t_tbl tenv) const {
 
     SimpleVar* isInduc = dynamic_cast<SimpleVar*>(this->getVar());
 
+    // check that we are not assigning to a for loop induction variable
     if (isInduc != nullptr) {
         E_enventry v = V_tbl_look(venv, isInduc->getSymbol());
         if (v->u.var.isFLIV == true) {
@@ -704,22 +706,24 @@ Ty_ty absyn::OpExp::typeCheck(v_tbl venv, t_tbl tenv) const {
     // check operands that require Ty_Int() or Ty_String() on both sides 
     else if (oper == absyn::OpExp::EXP_GT || oper == absyn::OpExp::EXP_GE
     || oper == absyn::OpExp::EXP_LT || oper == absyn::OpExp::EXP_LE) {
-         if (!matchTypes(this->getLeft()->typeCheck(venv, tenv), Ty_Int()) && 
+        if (!matchTypes(this->getLeft()->typeCheck(venv, tenv), Ty_Int()) && 
             !matchTypes(this->getLeft()->typeCheck(venv, tenv), Ty_String())) {
              EM_error(this->getPos(), "Cannot use relational operator where left operand is not "
              "of type int or string.");
              return Ty_Error();
-         } if (!matchTypes(this->getRight()->typeCheck(venv, tenv), Ty_Int()) && 
+        } if (!matchTypes(this->getRight()->typeCheck(venv, tenv), Ty_Int()) && 
             !matchTypes(this->getRight()->typeCheck(venv, tenv), Ty_String())) {
              EM_error(this->getPos(), "Cannot use relational operator where right operand is not "
              "of type int or string.");
              return Ty_Error();
-         } if (!matchTypes(this->getLeft()->typeCheck(venv, tenv), this->getRight()->typeCheck(venv, tenv))) {
+        } if (!matchTypes(this->getLeft()->typeCheck(venv, tenv), this->getRight()->typeCheck(venv, tenv))) {
             EM_error(this->getPos(), "Cannot use comparison operator on operands of different types.");
             return Ty_Error();
         }
-        // check operands that require only the same type on both sides
-    } else {
+        
+    }
+    // check operands that require only the same type on both sides
+    else {
         if (!matchTypes(this->getLeft()->typeCheck(venv, tenv), this->getRight()->typeCheck(venv, tenv))) {
             EM_error(this->getPos(), "Cannot use equality operator on operands of different types.");
             return Ty_Error();
@@ -824,6 +828,8 @@ absyn::FieldVar::~FieldVar() { delete var; }
 
 Ty_ty absyn::FieldVar::typeCheck(v_tbl venv, t_tbl tenv) const {
     Ty_ty var = this->getVar()->typeCheck(venv, tenv);
+
+    // check FieldVar essentials
     if (matchTypes(var, Ty_Error())) {
         return Ty_Error();
     } else if (var->kind != Ty_record) {
@@ -887,6 +893,7 @@ Ty_ty absyn::SubscriptVar::typeCheck(v_tbl venv, t_tbl tenv) const {
     Ty_ty var = this->getVar()->typeCheck(venv, tenv);
     Ty_ty ex = this->getExp()->typeCheck(venv, tenv);
 
+    // check SubscriptVar essentials
     if (var->kind != Ty_array) {
         EM_error(this->getPos(), "Variable being indexed into is not of array type.");
         return Ty_Error();
@@ -925,8 +932,6 @@ void absyn::FunctionDec::typeCheck(v_tbl venv, t_tbl tenv) const {
     FunDecList* fundeclist = this->getFunction();
     FunDec* fundec;
 
-    // iterate through all the functions
-    // for mutually recursive - 2 different for loops, one for headers and one for bodies 
     for (fundeclist; fundeclist != nullptr; fundeclist = fundeclist->getRest()) {
 
         // start checking parameters of a function (params)
@@ -936,14 +941,15 @@ void absyn::FunctionDec::typeCheck(v_tbl venv, t_tbl tenv) const {
         std::set<appel_string> mySet;
         std::set<appel_string>::iterator it;
         Env_beginScope(venv, tenv);
+        Ty_ty paramType;
         for (params; params != nullptr; params = params->getRest()) {
-            Ty_ty paramType = T_tbl_look(tenv, params->getHead()->getType());
+            paramType = T_tbl_look(tenv, params->getHead()->getType());
             S_symbol paramName = params->getHead()->getName();
 
             // check param is a valid type
             if (paramType == nullptr) {
                 EM_error(this->getPos(), "Parameter %s is not a valid type.", S_name(params->getHead()->getType()));
-                return;
+                paramType = Ty_Error();
             }
 
             typesList = Ty_TyList(paramType, typesList);
@@ -952,7 +958,7 @@ void absyn::FunctionDec::typeCheck(v_tbl venv, t_tbl tenv) const {
             for (it = mySet.begin(); it != mySet.end(); ++it) {
                 if (*it == S_name(paramName)) {
                     EM_error(this->getPos(), "Duplicate field name (%s) in function declaration.", S_name(paramName));
-                    return;
+                    paramType = Ty_Error();
                 }
             }
             // since param is unique, add to set so we can compare to later params in function declaration
@@ -961,7 +967,6 @@ void absyn::FunctionDec::typeCheck(v_tbl venv, t_tbl tenv) const {
             V_tbl_enter(venv, paramName, E_VarEntry(paramType));
         }
 
-
         // check if no return type given, then body must be of type void
         Ty_ty returnType;
         if (fundec->getResult() == nullptr) {
@@ -969,20 +974,31 @@ void absyn::FunctionDec::typeCheck(v_tbl venv, t_tbl tenv) const {
             if (!matchTypes(fundec->getBody()->typeCheck(venv, tenv), Ty_Void())) {
                 EM_error(this->getPos(), "The body must be of type void because %s has no return type.", 
                 S_name(fundec->getName()));
-                return;
+                returnType = Ty_Error();
             }
-            // else if return type is given, check that return type and the type of the body do match
+            // else if return type is given, check that return type and the type of the body do match,
         } else {
             returnType = T_tbl_look(tenv, fundec->getResult());
-            if (!matchTypes(returnType, fundec->getBody()->typeCheck(venv, tenv))) {
+            // is return type valid?
+            if (returnType == nullptr) {
+                EM_error(this->getPos(), "Undeclared return type for function %s", 
+                S_name(fundec->getName()));
+                returnType = Ty_Error();
+            }
+            else if (!matchTypes(returnType, fundec->getBody()->typeCheck(venv, tenv))) {
                 EM_error(this->getPos(), "Type mismatch: return type and body type do not match for function %s.", 
                 S_name(fundec->getName()));
-                return;
+                returnType = Ty_Error();
             }
         }
         Env_endScope(venv, tenv);
-        // if we get here, we have a valid function declaration, so go ahead and enter into value environment
-        V_tbl_enter(venv, fundec->getName(), E_FunEntry(typesList, returnType));
+
+        // if we had an error in the function declaration
+        if (matchTypes(paramType, Ty_Error()) || matchTypes(returnType, Ty_Error())) {
+            V_tbl_enter(venv, fundec->getName(), E_FunEntry(typesList, Ty_Error()));
+        } else {
+            V_tbl_enter(venv, fundec->getName(), E_FunEntry(typesList, returnType));
+        }
     }
 }
 
@@ -1008,7 +1024,11 @@ absyn::TypeDec::~TypeDec() { delete type; }
 
 void absyn::TypeDec::typeCheck(v_tbl venv, t_tbl tenv) const {
     NametyList* t;
-    for (t = this -> getType(); t != nullptr; t = t -> getRest()) { 
+
+    // loop through the types 
+    // check that they haven't already been defined 
+    // enter into tenv
+    for (t = this->getType(); t != nullptr; t = t->getRest()) { 
         if (T_tbl_look(tenv, t->getHead()->getName()) == nullptr) {
             T_tbl_enter(tenv, t->getHead()->getName(), t->getHead()->getType()->typeCheck(tenv));
         } else {
@@ -1145,6 +1165,7 @@ Ty_ty absyn::WhileExp::typeCheck(v_tbl venv, t_tbl tenv) const {
 
     inLoop = true;
 
+    // check while loop essentials
     if (!matchTypes(this->getTest()->typeCheck(venv, tenv), Ty_Int())) {
         EM_error(this->getPos(), "Lo expression in for loop must be of type int.");
         return Ty_Error();
@@ -1270,6 +1291,7 @@ Ty_ty absyn::ForExp::typeCheck(v_tbl venv, t_tbl tenv) const {
     inducVar->u.var.isFLIV = true;
     V_tbl_enter(venv, var, inducVar);
 
+    // check for loop essentials
     if (!matchTypes(this->getLo()->typeCheck(venv, tenv), Ty_Int())) {
         EM_error(this->getPos(), "Lower bound of FOR loop must be an integer expression.");
         return Ty_Error();
@@ -1366,11 +1388,6 @@ absyn::EFieldList *absyn::RecordExp::getFields(void) const { return fields; }
 absyn::RecordExp::~RecordExp() { delete fields; }
 
 Ty_ty absyn::RecordExp::typeCheck(v_tbl venv, t_tbl tenv) const {
-    // Ty_ty recType = T_tbl_look(tenv, this->getType());
-    // using a while loop, check both lists are of same length
-    // if not of same length, return error
-    // check both lists have the same parameters, and in the same order 
-
     Ty_ty recType = T_tbl_look(tenv, this->getType());
 
     // check type exists 
@@ -1400,9 +1417,6 @@ Ty_ty absyn::RecordExp::typeCheck(v_tbl venv, t_tbl tenv) const {
         "record %s.", S_name(this->getType()));
         return Ty_Error();
     }
-
-    // tyfields have both s_symbol and tyty
-    // EField has both s_symbol and exp (so call typecheck to get type)
 
     Ty_fieldList reversedTypes = Ty_FieldList(recType->u.record->head, recType->u.record->tail);
     fields = this -> getFields();
